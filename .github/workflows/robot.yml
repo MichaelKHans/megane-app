@@ -1,0 +1,33 @@
+name: Hent Megane Kilometer
+
+on:
+  schedule:
+    # Kører hver nat kl. 03:00 (Dansk tid ca. 04:00)
+    - cron: '0 3 * * *'
+  workflow_dispatch: 
+    # Gør at du kan starte den manuelt med en knap for at teste
+
+jobs:
+  update-km:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Hent koden
+        uses: actions/checkout@v4
+        
+      - name: Sæt Python op
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Installer biblioteker
+        run: |
+          pip install renault-api supabase aiohttp
+          
+      - name: Kør robotten!
+        env:
+          RENAULT_USER: ${{ secrets.RENAULT_USER }}
+          RENAULT_PASSWORD: ${{ secrets.RENAULT_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python update_km.py
