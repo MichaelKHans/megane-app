@@ -17,8 +17,12 @@ async def main():
         client = RenaultClient(websession=websession, locale="da_DK")
         await client.session.login(os.environ.get("RENAULT_USER"), os.environ.get("RENAULT_PASSWORD"))
         
-        account = await client.get_api_account()
-        # Dit stelnummer er skrevet direkte ind her:
+        # RETTELSE HER: Hent først dit specifikke Konto-ID
+        accounts = await client.get_api_accounts()
+        account_id = accounts[0].accountId
+        account = await client.get_api_account(account_id)
+        
+        # Hent bilen
         vehicle = await account.get_api_vehicle("VF1RCB00468400095")
         
         print("Henter data fra bilen...")
