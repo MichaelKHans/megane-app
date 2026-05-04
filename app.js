@@ -1,10 +1,13 @@
-// --- Globale variable der hentes fra telefonens hukommelse ---
+// --- Globale variable ---
 let START_KM = parseInt(localStorage.getItem('start_km')) || 65000;
 let MAX_INSURANCE_KM = parseInt(localStorage.getItem('max_ins_km')) || 25000;
 let MAX_WARRANTY_TOTAL_KM = parseInt(localStorage.getItem('max_war_km')) || 150000;
 
-// Hent kørselshistorik (et array af objekter) eller lav en tom liste
+// Hent kørselshistorik
 let kmHistory = JSON.parse(localStorage.getItem('km_history')) || [];
+
+// Variabel til vores graf (så vi kan opdatere den uden at tegne en ny oveni)
+let monthlyChartInstance = null;
 
 // --- Elementer fra siden ---
 const displayKm = document.getElementById('current-km-display');
@@ -23,11 +26,12 @@ const valMaxWar = document.getElementById('val-max-war');
 
 const vinDisplay = document.getElementById('vin-display'); 
 
-// Nye elementer til historik
+// Elementer til historik & Graf
 const historyList = document.getElementById('history-list');
 const statThisMonth = document.getElementById('stat-this-month');
 const statTotalDriven = document.getElementById('stat-total-driven');
 const btnAddHistory = document.getElementById('btn-add-history');
+const chartCanvas = document.getElementById('monthlyChart');
 
 // Navigation
 const navHome = document.getElementById('nav-home');
@@ -44,7 +48,7 @@ const sectionEmergency = document.getElementById('emergency-section');
 function initApp() {
     let savedKm = localStorage.getItem('megane_km') ? parseInt(localStorage.getItem('megane_km')) : 77000;
     
-    // Hvis historikken er tom, men vi har et gemt km-tal, laver vi en første indtastning for at starte listen
+    // Start første log, hvis der ikke er nogen
     if (kmHistory.length === 0 && savedKm) {
         kmHistory.push({ date: new Date().toISOString(), km: savedKm, diff: 0 });
         localStorage.setItem('km_history', JSON.stringify(kmHistory));
@@ -95,36 +99,30 @@ function updateDashboard(currentKm) {
     warrantyText.innerText = warrantyLeft.toLocaleString('da-DK') + ' km tilbage';
 }
 
-// --- Opdater Historik Listen ---
+// --- Opdater Historik Liste & Tegn Graf ---
 function renderHistory() {
-    historyList.innerHTML = ''; // Ryd listen før vi tegner den igen
+    historyList.innerHTML = ''; 
     let currentMonthKm = 0;
     
-    // Sortér listen så den nyeste er øverst
     const sortedHistory = [...kmHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
-    
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
 
-    // Den nyeste km stand (til at regne total)
     const latestKm = sortedHistory.length > 0 ? sortedHistory[0].km : START_KM;
     statTotalDriven.innerText = (latestKm - START_KM).toLocaleString('da-DK');
 
+    // 1. Byg selve listen (HTML)
     sortedHistory.forEach(entry => {
         const entryDate = new Date(entry.date);
         
-        // Regn ud om posten er fra denne måned
         if(entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear) {
             currentMonthKm += entry.diff;
         }
 
-        // Formater datoen pænt (fx "4. maj 2026")
         const dateString = entryDate.toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' });
-
         const li = document.createElement('li');
         li.className = 'history-item';
         
-        // Hvis diff er 0 (fx første post), viser vi bare "Start" i stedet for en badge
         const diffBadge = entry.diff > 0 
             ? `<span class="history-diff">+ ${entry.diff.toLocaleString('da-DK')} km</span>` 
             : `<span style="font-size: 13px; color: var(--text-muted);">Start</span>`;
@@ -140,11 +138,86 @@ function renderHistory() {
     });
 
     statThisMonth.innerText = currentMonthKm.toLocaleString('da-DK');
+
+    // 2. Klargør data til Grafen (Gruppér diff pr. måned)
+    const monthlyData = {};
+    
+    // Vi kigger på historikken kronologisk for grafen
+    const chronologicalHistory = [...kmHistory].sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    chronologicalHistory.forEach(entry => {
+        // Ignorer den allerførste "0"-diff post, da den ikke er kørte kilometer
+        if (entry.diff === 0) return; 
+
+        const d = new Date(entry.date);
+        // Format: "Maj 2026"
+        const monthLabel = d.toLocaleDateString('da-DK', { month: 'short', year: 'numeric' });
+        
+        // Læg kilometer til den pågældende måned
+        if(monthlyData[monthLabel]) {
+            monthlyData[monthLabel] += entry.diff;
+        } else {
+            monthlyData[monthLabel] = entry.diff;
+        }
+    });
+
+    const labels = Object.keys(monthlyData);
+    const dataPoints = Object.values(monthlyData);
+
+    // 3. Tegn grafen med Chart.js
+    if (monthlyChartInstance) {
+        monthlyChartInstance.destroy(); // Slet den gamle graf for at undgå fejl
+    }
+
+    // Hvis der slet ikke er kørt noget endnu, vis en "tom" graf
+    if (labels.length === 0) {
+        labels.push("Denne måned");
+        dataPoints.push(0);
+    }
+
+    monthlyChartInstance = new Chart(chartCanvas, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Kørte kilometer',
+                data: dataPoints,
+                backgroundColor: '#0056b3', // Din Primary Blue
+                borderRadius: 4,
+                barThickness: 'flex',
+                maxBarThickness: 40
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y + ' km';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#f0f0f0' },
+                    border: { display: false }
+                },
+                x: {
+                    grid: { display: false },
+                    border: { display: false }
+                }
+            }
+        }
+    });
 }
 
 // --- Indtast kilometer ---
 function promptForKilometers() {
-    // Find det højeste tal indtastet hidtil
     const currentSavedKm = kmHistory.length > 0 ? Math.max(...kmHistory.map(h => h.km)) : 77000;
     
     const input = prompt("Hvad står kilometer tælleren i Renault appen på nu?", currentSavedKm);
@@ -154,7 +227,6 @@ function promptForKilometers() {
         if (!isNaN(newKm) && newKm >= currentSavedKm) {
             const diff = newKm - currentSavedKm;
             
-            // Gem den nye post i historikken
             kmHistory.push({
                 date: new Date().toISOString(),
                 km: newKm,
@@ -172,7 +244,6 @@ function promptForKilometers() {
     }
 }
 
-// Lyt efter klik på log-knapperne (både på forsiden og historik-siden)
 btnLogKm.addEventListener('click', promptForKilometers);
 btnAddHistory.addEventListener('click', promptForKilometers);
 
@@ -217,7 +288,7 @@ document.querySelectorAll('.edit-btn').forEach(btn => {
     });
 });
 
-// --- Stelnummer (Klik for at forstørre) ---
+// --- Stelnummer ---
 if (vinDisplay) {
     vinDisplay.addEventListener('click', () => {
         vinDisplay.classList.toggle('vin-large');

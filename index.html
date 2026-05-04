@@ -24,7 +24,7 @@
             </div>
             <div class="vin-text" id="vin-display" title="Tryk for at gøre større">Stelnummer: VF1RCB00468400095</div>
         </div>
-        <div class="version-info">v1.4.0</div>
+        <div class="version-info">v1.5.0</div>
     </header>
 
     <main id="app-content">
@@ -60,11 +60,10 @@
             <button id="btn-edit-settings" class="primary-btn btn-settings">⚙️ Rediger aftaler (Start KM mm.)</button>
         </section>
 
-        <!-- 2. KØRSEL & HISTORIK (NY SEKTION) -->
+        <!-- 2. KØRSEL & HISTORIK -->
         <section id="history-section" class="card hidden">
             <h2>Kørselshistorik</h2>
             
-            <!-- Statistik i toppen -->
             <div class="stats-grid">
                 <div class="stat-box">
                     <span class="stat-value" id="stat-this-month">0</span>
@@ -76,11 +75,15 @@
                 </div>
             </div>
 
+            <!-- NYT: Her bor den nye flotte graf -->
+            <div class="chart-wrapper">
+                <canvas id="monthlyChart"></canvas>
+            </div>
+
             <button id="btn-add-history" class="primary-btn" style="margin-bottom: 24px;">+ Tilføj ny måling</button>
 
-            <!-- Listen der automatisk fyldes med JavaScript -->
             <ul class="history-list" id="history-list">
-                <!-- Dynamisk indhold lander her -->
+                <!-- Dynamisk indhold -->
             </ul>
         </section>
 
@@ -159,7 +162,6 @@
             <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             <span>Overblik</span>
         </button>
-        <!-- Nyt Kørsel ikon tilføjet -->
         <button class="nav-item" id="nav-history">
             <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M3 3v18h18v-2H5V3H3zm14 10l-4-4-4 4-4-4v6h16v-6l-4 4z"/></svg>
             <span>Kørsel</span>
@@ -174,6 +176,8 @@
         </button>
     </nav>
 
+    <!-- Henter Chart.js graf-motoren ind fra nettet -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
