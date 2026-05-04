@@ -93,12 +93,27 @@ body {
 .vin-text {
     font-size: 12px;
     color: var(--text-muted);
-    margin-top: 6px;
+    margin-top: 8px;
     font-family: monospace;
     background: #f0f0f0;
-    padding: 3px 6px;
+    padding: 4px 8px;
     border-radius: 4px;
     display: inline-block;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: all; /* Gør det nemt at kopiere stelnummeret med ét langt tryk */
+}
+
+/* Den nye store version af stelnummeret */
+.vin-large {
+    font-size: 18px;
+    color: var(--text-main);
+    background: #fef08a; /* Gul overstregning */
+    border: 2px solid var(--warning-yellow);
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .version-info {
@@ -287,6 +302,7 @@ h2 {
 .indicator.yellow { background-color: var(--warning-yellow); }
 .indicator.green { background-color: var(--success-green); }
 .indicator.blue { background-color: #0ea5e9; }
+.indicator.red { background-color: var(--danger-red); }
 
 .date-info strong { font-size: 16px; color: var(--text-main); display: block;}
 .date-info span { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
@@ -346,6 +362,7 @@ h2 {
 
 .nav-item.emergency { color: var(--text-muted); }
 .nav-item.emergency.active { color: var(--danger-red); }
+
 /* --- Rediger-knapper --- */
 .edit-btn {
     background: none;
@@ -354,7 +371,7 @@ h2 {
     color: var(--text-muted);
     cursor: pointer;
     padding: 8px;
-    margin-left: auto; /* Skubber blyanten helt til højre */
+    margin-left: auto;
     transition: transform 0.2s;
 }
 
@@ -371,5 +388,3 @@ h2 {
     font-size: 14px;
     box-shadow: none;
 }
-
-.indicator.red { background-color: var(--danger-red); }
