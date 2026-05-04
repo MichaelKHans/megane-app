@@ -346,3 +346,30 @@ h2 {
 
 .nav-item.emergency { color: var(--text-muted); }
 .nav-item.emergency.active { color: var(--danger-red); }
+/* --- Rediger-knapper --- */
+.edit-btn {
+    background: none;
+    border: none;
+    font-size: 16px;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 8px;
+    margin-left: auto; /* Skubber blyanten helt til højre */
+    transition: transform 0.2s;
+}
+
+.edit-btn:active {
+    transform: scale(1.2);
+}
+
+.btn-settings {
+    background-color: transparent;
+    color: var(--text-muted);
+    border: 1px solid #d1d5db;
+    padding: 10px;
+    margin-top: 15px;
+    font-size: 14px;
+    box-shadow: none;
+}
+
+.indicator.red { background-color: var(--danger-red); }

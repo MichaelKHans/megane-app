@@ -4,11 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Min Megane</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Megane">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     
-    <!-- Topbar med større nummerplade og stelnummer -->
     <header class="topbar">
         <div class="header-center">
             <div class="license-plate large-plate">
@@ -20,7 +24,7 @@
             </div>
             <div class="vin-text">Stelnummer: VF1RCB00468400095</div>
         </div>
-        <div class="version-info">v1.1.0</div>
+        <div class="version-info">v1.2.0</div>
     </header>
 
     <main id="app-content">
@@ -32,27 +36,28 @@
             
             <div class="progress-container">
                 <div class="progress-label-row">
-                    <label>If Forsikring (Max 25.000 km)</label>
+                    <label>If Forsikring (Max <span id="val-max-ins">25.000</span> km)</label>
                     <span id="insurance-status" class="status-badge">OK</span>
                 </div>
                 <div class="progress-bar-bg">
-                    <div id="insurance-bar" class="progress-fill blue-fill" style="width: 48%;"></div>
+                    <div id="insurance-bar" class="progress-fill blue-fill" style="width: 0%;"></div>
                 </div>
-                <small id="insurance-text" class="progress-subtext">13.000 km tilbage til 1. august</small>
+                <small id="insurance-text" class="progress-subtext">Henter data...</small>
             </div>
 
             <div class="progress-container">
                 <div class="progress-label-row">
-                    <label>GoSafe Garanti (Max 150.000 km)</label>
+                    <label>GoSafe Garanti (Max <span id="val-max-war">150.000</span> km)</label>
                     <span id="warranty-status" class="status-badge">OK</span>
                 </div>
                 <div class="progress-bar-bg">
-                    <div id="warranty-bar" class="progress-fill green-fill" style="width: 51%;"></div>
+                    <div id="warranty-bar" class="progress-fill green-fill" style="width: 0%;"></div>
                 </div>
-                <small id="warranty-text" class="progress-subtext">73.000 km tilbage</small>
+                <small id="warranty-text" class="progress-subtext">Henter data...</small>
             </div>
 
             <button id="btn-open-log" class="primary-btn">Log nye kilometer</button>
+            <button id="btn-edit-settings" class="primary-btn btn-settings">⚙️ Rediger aftaler (Start KM mm.)</button>
         </section>
 
         <!-- 2. INFO & DATOER -->
@@ -62,30 +67,34 @@
                 <li>
                     <span class="indicator yellow"></span> 
                     <div class="date-info">
-                        <strong>B-Service & Periodisk Syn</strong>
-                        <span>18. maj 2026</span>
+                        <strong>B-Service</strong>
+                        <span id="val-date-bservice">18. maj 2026</span>
                     </div>
+                    <button class="edit-btn" data-edit="val-date-bservice" data-title="B-Service">✏️</button>
+                </li>
+                <li>
+                    <span class="indicator red"></span> 
+                    <div class="date-info">
+                        <strong>Periodisk Syn</strong>
+                        <span id="val-date-syn">23. juni 2026</span>
+                    </div>
+                    <button class="edit-btn" data-edit="val-date-syn" data-title="Periodisk Syn">✏️</button>
                 </li>
                 <li>
                     <span class="indicator blue"></span> 
                     <div class="date-info">
                         <strong>A-Service (Forventet)</strong>
-                        <span>Maj 2027</span>
+                        <span id="val-date-aservice">Maj 2027</span>
                     </div>
-                </li>
-                <li>
-                    <span class="indicator yellow"></span> 
-                    <div class="date-info">
-                        <strong>B-Service & Periodisk Syn</strong>
-                        <span>Maj 2028</span>
-                    </div>
+                    <button class="edit-btn" data-edit="val-date-aservice" data-title="A-Service">✏️</button>
                 </li>
                 <li>
                     <span class="indicator green"></span> 
                     <div class="date-info">
                         <strong>GoSafe Garanti Udløb</strong>
-                        <span>1. september 2029</span>
+                        <span id="val-date-garanti">1. september 2029</span>
                     </div>
+                    <button class="edit-btn" data-edit="val-date-garanti" data-title="Garanti Udløb">✏️</button>
                 </li>
             </ul>
 
@@ -121,7 +130,6 @@
 
     </main>
 
-    <!-- Bundmenu med professionelle SVG ikoner -->
     <nav class="bottom-nav">
         <button class="nav-item active" id="nav-home">
             <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
