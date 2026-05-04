@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <!-- Sikrer at appen fylder hele mobilskærmen og ikke kan zoomes uhensigtsmæssigt -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Min Megane</title>
+    <!-- Vi henviser til CSS-filen, som vi bygger i næste ryk -->
+    <link rel="stylesheet" href="style.css">
+    <!-- manifest.json tilføjer vi senere, så den kan gemmes som en PWA på hjemskærmen -->
+</head>
+<body>
+    
+    <!-- Topbar med nummerplade og versionsnummer -->
+    <header class="topbar">
+        <div class="license-plate">
+            <div class="eu-band">
+                <span class="eu-stars">EU</span>
+                <span class="eu-dk">DK</span>
+            </div>
+            <span class="plate-number">EM 37 761</span>
+        </div>
+        <div class="version-info">v1.0.0</div>
+    </header>
+
+    <!-- Hovedindholdet i appen -->
+    <main id="app-content">
+        
+        <!-- Dette er velkomstskærmen / overblikket -->
+        <section id="dashboard" class="card active-section">
+            <h2>Kilometer Overblik</h2>
+            <p class="current-km-text">Nuværende stand: <span id="current-km-display">77.000</span> km</p>
+            
+            <div class="progress-container">
+                <div class="progress-label-row">
+                    <label>If Forsikring (Max 25.000 km)</label>
+                    <span id="insurance-status" class="status-badge">OK</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div id="insurance-bar" class="progress-fill blue-fill" style="width: 48%;"></div>
+                </div>
+                <small id="insurance-text" class="progress-subtext">13.000 km tilbage til 1. august</small>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-label-row">
+                    <label>GoSafe Garanti (Max 150.000 km)</label>
+                    <span id="warranty-status" class="status-badge">OK</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div id="warranty-bar" class="progress-fill green-fill" style="width: 51%;"></div>
+                </div>
+                <small id="warranty-text" class="progress-subtext">73.000 km tilbage</small>
+            </div>
+
+            <button id="btn-open-log" class="primary-btn">Log nye kilometer</button>
+        </section>
+
+        <!-- Sektion til datoer og service -->
+        <section id="dates-section" class="card hidden">
+            <h2>Vigtige Datoer</h2>
+            <ul class="date-list">
+                <li>
+                    <span class="indicator yellow"></span> 
+                    <div class="date-info">
+                        <strong>B-Service & Syn</strong>
+                        <span>18. maj 2026</span>
+                    </div>
+                </li>
+                <li>
+                    <span class="indicator green"></span> 
+                    <div class="date-info">
+                        <strong>Garanti Udløb</strong>
+                        <span>1. september 2029</span>
+                    </div>
+                </li>
+            </ul>
+        </section>
+
+    </main>
+
+    <!-- Bundmenu for nem navigation med tommelfingeren -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" id="nav-home">
+            <span class="icon">🏠</span>
+            <span>Overblik</span>
+        </button>
+        <button class="nav-item" id="nav-dates">
+            <span class="icon">📅</span>
+            <span>Datoer</span>
+        </button>
+        <button class="nav-item emergency" id="nav-emergency">
+            <span class="icon">⚠️</span>
+            <span>UHELD</span>
+        </button>
+    </nav>
+
+    <!-- Vi henviser til JavaScript-filen, som styrer logikken og MacroDroid genvejen -->
+    <script src="app.js"></script>
+</body>
+</html>
