@@ -17,9 +17,9 @@ async def main():
         client = RenaultClient(websession=websession, locale="da_DK")
         await client.session.login(os.environ.get("RENAULT_USER"), os.environ.get("RENAULT_PASSWORD"))
         
-        # RETTELSE HER: Hent først dit specifikke Konto-ID
+        # RETTELSE HER: account_id med små bogstaver og underscore
         accounts = await client.get_api_accounts()
-        account_id = accounts[0].accountId
+        account_id = accounts[0].account_id
         account = await client.get_api_account(account_id)
         
         # Hent bilen
