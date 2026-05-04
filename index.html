@@ -2,31 +2,30 @@
 <html lang="da">
 <head>
     <meta charset="UTF-8">
-    <!-- Sikrer at appen fylder hele mobilskærmen og ikke kan zoomes uhensigtsmæssigt -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Min Megane</title>
-    <!-- Vi henviser til CSS-filen, som vi bygger i næste ryk -->
     <link rel="stylesheet" href="style.css">
-    <!-- manifest.json tilføjer vi senere, så den kan gemmes som en PWA på hjemskærmen -->
 </head>
 <body>
     
-    <!-- Topbar med nummerplade og versionsnummer -->
+    <!-- Topbar med større nummerplade og stelnummer -->
     <header class="topbar">
-        <div class="license-plate">
-            <div class="eu-band">
-                <span class="eu-stars">EU</span>
-                <span class="eu-dk">DK</span>
+        <div class="header-center">
+            <div class="license-plate large-plate">
+                <div class="eu-band">
+                    <span class="eu-stars">EU</span>
+                    <span class="eu-dk">DK</span>
+                </div>
+                <span class="plate-number">EM 37 761</span>
             </div>
-            <span class="plate-number">EM 37 761</span>
+            <div class="vin-text">Stelnummer: VF1RCB00468400095</div>
         </div>
-        <div class="version-info">v1.0.0</div>
+        <div class="version-info">v1.1.0</div>
     </header>
 
-    <!-- Hovedindholdet i appen -->
     <main id="app-content">
         
-        <!-- Dette er velkomstskærmen / overblikket -->
+        <!-- 1. OVERBLIK -->
         <section id="dashboard" class="card active-section">
             <h2>Kilometer Overblik</h2>
             <p class="current-km-text">Nuværende stand: <span id="current-km-display">77.000</span> km</p>
@@ -56,46 +55,88 @@
             <button id="btn-open-log" class="primary-btn">Log nye kilometer</button>
         </section>
 
-        <!-- Sektion til datoer og service -->
+        <!-- 2. INFO & DATOER -->
         <section id="dates-section" class="card hidden">
             <h2>Vigtige Datoer</h2>
             <ul class="date-list">
                 <li>
                     <span class="indicator yellow"></span> 
                     <div class="date-info">
-                        <strong>B-Service & Syn</strong>
+                        <strong>B-Service & Periodisk Syn</strong>
                         <span>18. maj 2026</span>
+                    </div>
+                </li>
+                <li>
+                    <span class="indicator blue"></span> 
+                    <div class="date-info">
+                        <strong>A-Service (Forventet)</strong>
+                        <span>Maj 2027</span>
+                    </div>
+                </li>
+                <li>
+                    <span class="indicator yellow"></span> 
+                    <div class="date-info">
+                        <strong>B-Service & Periodisk Syn</strong>
+                        <span>Maj 2028</span>
                     </div>
                 </li>
                 <li>
                     <span class="indicator green"></span> 
                     <div class="date-info">
-                        <strong>Garanti Udløb</strong>
+                        <strong>GoSafe Garanti Udløb</strong>
                         <span>1. september 2029</span>
                     </div>
                 </li>
             </ul>
+
+            <h2 style="margin-top: 32px;">Bil & Forsikring</h2>
+            <ul class="info-list">
+                <li><strong>Forsikring:</strong> If (Police: 582382857)</li>
+                <li><strong>Selvrisiko:</strong> 4.000 kr. (Glas: 2.000 kr. / Stenslag: 0 kr.)</li>
+                <li><strong>Dæk:</strong> Continental AllSeasonContact 2 XL Evc</li>
+                <li><strong>Dækstørrelse:</strong> 215/45 R20 (Monteret 10.10.2025)</li>
+            </ul>
+        </section>
+
+        <!-- 3. UHELD & NØDSITUATION -->
+        <section id="emergency-section" class="card hidden emergency-card">
+            <h2>🚨 Hvis uheldet er ude</h2>
+            <p class="emergency-sub">Sørg for sikkerhed først (refleksvest og trekant). Brug derefter knapperne.</p>
+            
+            <div class="emergency-actions">
+                <a href="tel:112" class="primary-btn btn-red">Ring 112</a>
+                <a href="tel:70121242" class="primary-btn btn-blue">If Vejhjælp (70 12 12 42)</a>
+                <a href="tel:" class="primary-btn btn-outline">Ring til Maja</a>
+            </div>
+
+            <div class="checklist">
+                <h3>Husk at notere / fotografere:</h3>
+                <ul>
+                    <li>Skader på begge biler og omgivelserne.</li>
+                    <li>Modpartens navn og telefonnummer.</li>
+                    <li>Modpartens nummerplade og forsikringsselskab.</li>
+                </ul>
+            </div>
         </section>
 
     </main>
 
-    <!-- Bundmenu for nem navigation med tommelfingeren -->
+    <!-- Bundmenu med professionelle SVG ikoner -->
     <nav class="bottom-nav">
         <button class="nav-item active" id="nav-home">
-            <span class="icon">🏠</span>
+            <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             <span>Overblik</span>
         </button>
         <button class="nav-item" id="nav-dates">
-            <span class="icon">📅</span>
-            <span>Datoer</span>
+            <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/></svg>
+            <span>Dato & Info</span>
         </button>
         <button class="nav-item emergency" id="nav-emergency">
-            <span class="icon">⚠️</span>
+            <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
             <span>UHELD</span>
         </button>
     </nav>
 
-    <!-- Vi henviser til JavaScript-filen, som styrer logikken og MacroDroid genvejen -->
     <script src="app.js"></script>
 </body>
 </html>
