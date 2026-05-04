@@ -24,7 +24,7 @@
             </div>
             <div class="vin-text" id="vin-display" title="Tryk for at gøre større">Stelnummer: VF1RCB00468400095</div>
         </div>
-        <div class="version-info">v1.5.0</div>
+        <div class="version-info">v2.0.0 (Cloud)</div>
     </header>
 
     <main id="app-content">
@@ -32,7 +32,7 @@
         <!-- 1. OVERBLIK -->
         <section id="dashboard" class="card active-section">
             <h2>Kilometer Overblik</h2>
-            <p class="current-km-text">Nuværende stand: <span id="current-km-display">77.000</span> km</p>
+            <p class="current-km-text">Nuværende stand: <span id="current-km-display">Henter...</span> km</p>
             
             <div class="progress-container">
                 <div class="progress-label-row">
@@ -75,7 +75,6 @@
                 </div>
             </div>
 
-            <!-- NYT: Her bor den nye flotte graf -->
             <div class="chart-wrapper">
                 <canvas id="monthlyChart"></canvas>
             </div>
@@ -83,7 +82,7 @@
             <button id="btn-add-history" class="primary-btn" style="margin-bottom: 24px;">+ Tilføj ny måling</button>
 
             <ul class="history-list" id="history-list">
-                <!-- Dynamisk indhold -->
+                <!-- Dynamisk indhold fra Supabase -->
             </ul>
         </section>
 
@@ -176,8 +175,10 @@
         </button>
     </nav>
 
-    <!-- Henter Chart.js graf-motoren ind fra nettet -->
+    <!-- Henter Chart.js og Supabase fra nettet -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <script src="app.js"></script>
 </body>
 </html>

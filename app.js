@@ -1,12 +1,15 @@
+// --- Supabase Opsætning ---
+const supabaseUrl = 'https://ibuaufoncymhlljgamie.supabase.co';
+const supabaseKey = 'sb_publishable_r9cQCKHvlOh1RUqXdDM45A_bJEoovHh';
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
 // --- Globale variable ---
 let START_KM = parseInt(localStorage.getItem('start_km')) || 65000;
 let MAX_INSURANCE_KM = parseInt(localStorage.getItem('max_ins_km')) || 25000;
 let MAX_WARRANTY_TOTAL_KM = parseInt(localStorage.getItem('max_war_km')) || 150000;
 
-// Hent kørselshistorik
-let kmHistory = JSON.parse(localStorage.getItem('km_history')) || [];
-
-// Variabel til vores graf (så vi kan opdatere den uden at tegne en ny oveni)
+// Historikken hentes nu live fra Supabase
+let kmHistory = [];
 let monthlyChartInstance = null;
 
 // --- Elementer fra siden ---
@@ -45,23 +48,40 @@ const sectionDates = document.getElementById('dates-section');
 const sectionEmergency = document.getElementById('emergency-section');
 
 // --- Initialisering ---
-function initApp() {
-    let savedKm = localStorage.getItem('megane_km') ? parseInt(localStorage.getItem('megane_km')) : 77000;
-    
-    // Start første log, hvis der ikke er nogen
-    if (kmHistory.length === 0 && savedKm) {
-        kmHistory.push({ date: new Date().toISOString(), km: savedKm, diff: 0 });
-        localStorage.setItem('km_history', JSON.stringify(kmHistory));
-    }
-
-    updateDashboard(savedKm);
-    renderHistory();
+async function initApp() {
     loadDates();
+    
+    // Hent live-data fra databasen
+    await loadDataFromCloud();
 
+    // Tjek for MacroDroid genvej
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('handling') === 'log-kilometer') {
         window.history.replaceState({}, document.title, window.location.pathname);
         promptForKilometers();
+    }
+}
+
+// --- Hent Data fra Supabase ---
+async function loadDataFromCloud() {
+    const { data, error } = await supabaseClient
+        .from('km_historik')
+        .select('*')
+        .order('dato', { ascending: false }); // Nyeste øverst
+
+    if (error) {
+        console.error("Kunne ikke hente historik fra skyen:", error);
+        // Fallback til sidst kendte km, hvis der ikke er internet
+        let savedKm = parseInt(localStorage.getItem('megane_km')) || 77000;
+        updateDashboard(savedKm);
+    } else {
+        kmHistory = data || [];
+        
+        let currentKm = kmHistory.length > 0 ? kmHistory[0].km : (parseInt(localStorage.getItem('megane_km')) || 77000);
+        localStorage.setItem('megane_km', currentKm); // Lokal backup
+        
+        updateDashboard(currentKm);
+        renderHistory();
     }
 }
 
@@ -104,16 +124,16 @@ function renderHistory() {
     historyList.innerHTML = ''; 
     let currentMonthKm = 0;
     
-    const sortedHistory = [...kmHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+    // kmHistory er allerede sorteret med nyeste øverst fra databasen
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
 
-    const latestKm = sortedHistory.length > 0 ? sortedHistory[0].km : START_KM;
+    const latestKm = kmHistory.length > 0 ? kmHistory[0].km : START_KM;
     statTotalDriven.innerText = (latestKm - START_KM).toLocaleString('da-DK');
 
     // 1. Byg selve listen (HTML)
-    sortedHistory.forEach(entry => {
-        const entryDate = new Date(entry.date);
+    kmHistory.forEach(entry => {
+        const entryDate = new Date(entry.dato); // Kolonnen hedder "dato" i databasen
         
         if(entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear) {
             currentMonthKm += entry.diff;
@@ -139,21 +159,18 @@ function renderHistory() {
 
     statThisMonth.innerText = currentMonthKm.toLocaleString('da-DK');
 
-    // 2. Klargør data til Grafen (Gruppér diff pr. måned)
+    // 2. Klargør data til Grafen
     const monthlyData = {};
     
     // Vi kigger på historikken kronologisk for grafen
-    const chronologicalHistory = [...kmHistory].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const chronologicalHistory = [...kmHistory].sort((a, b) => new Date(a.dato) - new Date(b.dato));
     
     chronologicalHistory.forEach(entry => {
-        // Ignorer den allerførste "0"-diff post, da den ikke er kørte kilometer
         if (entry.diff === 0) return; 
 
-        const d = new Date(entry.date);
-        // Format: "Maj 2026"
+        const d = new Date(entry.dato);
         const monthLabel = d.toLocaleDateString('da-DK', { month: 'short', year: 'numeric' });
         
-        // Læg kilometer til den pågældende måned
         if(monthlyData[monthLabel]) {
             monthlyData[monthLabel] += entry.diff;
         } else {
@@ -166,10 +183,9 @@ function renderHistory() {
 
     // 3. Tegn grafen med Chart.js
     if (monthlyChartInstance) {
-        monthlyChartInstance.destroy(); // Slet den gamle graf for at undgå fejl
+        monthlyChartInstance.destroy(); 
     }
 
-    // Hvis der slet ikke er kørt noget endnu, vis en "tom" graf
     if (labels.length === 0) {
         labels.push("Denne måned");
         dataPoints.push(0);
@@ -182,7 +198,7 @@ function renderHistory() {
             datasets: [{
                 label: 'Kørte kilometer',
                 data: dataPoints,
-                backgroundColor: '#0056b3', // Din Primary Blue
+                backgroundColor: '#0056b3', 
                 borderRadius: 4,
                 barThickness: 'flex',
                 maxBarThickness: 40
@@ -216,28 +232,38 @@ function renderHistory() {
     });
 }
 
-// --- Indtast kilometer ---
-function promptForKilometers() {
-    const currentSavedKm = kmHistory.length > 0 ? Math.max(...kmHistory.map(h => h.km)) : 77000;
+// --- Indtast og Gem kilometer til Databasen ---
+async function promptForKilometers() {
+    const currentSavedKm = kmHistory.length > 0 ? kmHistory[0].km : (parseInt(localStorage.getItem('megane_km')) || 77000);
     
     const input = prompt("Hvad står kilometer tælleren i Renault appen på nu?", currentSavedKm);
     if (input !== null && input !== "") {
         const newKm = parseInt(input.replace(/\./g, '')); 
         
         if (!isNaN(newKm) && newKm >= currentSavedKm) {
-            const diff = newKm - currentSavedKm;
+            // Hvis det er allerførste indtastning i skyen, sæt diff til 0
+            const diff = kmHistory.length === 0 ? 0 : newKm - currentSavedKm;
             
-            kmHistory.push({
-                date: new Date().toISOString(),
-                km: newKm,
-                diff: diff
-            });
-            
-            localStorage.setItem('km_history', JSON.stringify(kmHistory));
+            // 1. Opdater skærmen med det samme for hurtig reaktion
+            const tempEntry = { dato: new Date().toISOString(), km: newKm, diff: diff };
+            kmHistory.unshift(tempEntry);
             localStorage.setItem('megane_km', newKm);
-            
             updateDashboard(newKm);
             renderHistory();
+
+            // 2. Send data til Supabase i baggrunden
+            const { error } = await supabaseClient
+                .from('km_historik')
+                .insert([{ km: newKm, diff: diff }]);
+            
+            if (error) {
+                alert("Der opstod en fejl ved overførsel til skyen.");
+                console.error("Supabase fejl:", error);
+            } else {
+                // Hent listen ned igen for at sikre at id og serverens præcise tidsstempel er med
+                await loadDataFromCloud();
+            }
+
         } else {
             alert("Fejl: Tallet er ugyldigt eller lavere end tidligere indtastninger.");
         }
@@ -258,7 +284,7 @@ btnEditSettings.addEventListener('click', () => {
     let newWar = prompt("Hvad er bilens totale kilometergrænse for garantien?", MAX_WARRANTY_TOTAL_KM);
     if (newWar) { MAX_WARRANTY_TOTAL_KM = parseInt(newWar); localStorage.setItem('max_war_km', MAX_WARRANTY_TOTAL_KM); }
 
-    const currentSavedKm = kmHistory.length > 0 ? Math.max(...kmHistory.map(h => h.km)) : 77000;
+    const currentSavedKm = kmHistory.length > 0 ? kmHistory[0].km : 77000;
     updateDashboard(currentSavedKm);
     renderHistory();
 });
