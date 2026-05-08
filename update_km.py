@@ -5,7 +5,7 @@ from renault_api.renault_client import RenaultClient
 from supabase import create_client, Client
 
 async def main():
-    print("Starter Megane-robotten (Debug-mode)...")
+    print("Starter Megane-robotten (Batteri-opgradering)...")
     
     supabase_url = os.environ.get("SUPABASE_URL")
     supabase_key = os.environ.get("SUPABASE_SERVICE_KEY")
@@ -22,38 +22,45 @@ async def main():
             
             try:
                 vehicles_res = await account.get_vehicles()
-                if not vehicles_res.vehicleLinks:
-                    continue
+                if not vehicles_res.vehicleLinks: continue
                 
-                vehicle_link = vehicles_res.vehicleLinks[0]
-                vin = vehicle_link.vin
+                vin = vehicles_res.vehicleLinks[0].vin
                 api_vehicle = await account.get_api_vehicle(vin)
-                cockpit = await api_vehicle.get_cockpit()
-                current_km = int(cockpit.totalMileage) # Vi runder til heltal
                 
-                print(f"Bilen fundet! Stand: {current_km} km")
+                # HENT DATA
+                cockpit = await api_vehicle.get_cockpit()
+                battery = await api_vehicle.get_battery_status()
+                
+                current_km = int(cockpit.totalMileage)
+                current_bat = int(battery.batteryLevel)
+                current_range = int(battery.batteryAutonomy)
+                
+                print(f"Data hentet: {current_km} km, {current_bat}% batteri, {current_range} km rækkevidde.")
 
-                # Forsøg at gemme
+                # GEM I DATABASE
                 try:
-                    # Tjek sidste stand
-                    res = supabase.table("km_historik").select("km").order("dato", desc=True).limit(1).execute()
+                    # Vi gemmer altid en linje hvis batteriprocenten har ændret sig
+                    # eller hvis der er kørt kilometer.
+                    res = supabase.table("km_historik").select("*").order("dato", desc=True).limit(1).execute()
                     last_km = res.data[0]['km'] if res.data else 0
+                    diff = current_km - last_km if res.data else 0
                     
-                    if current_km > last_km or not res.data:
-                        diff = current_km - last_km if res.data else 0
-                        # Vi indsætter km og diff
-                        insert_res = supabase.table("km_historik").insert({"km": current_km, "diff": diff}).execute()
-                        print(f"SUCCES: Gemte {current_km} km i databasen.")
-                    else:
-                        print(f"Ingen kørsel registreret (Sidste: {last_km}, Nu: {current_km})")
-                    return # Stop når det er lykkedes
+                    # Indsæt alt data
+                    supabase.table("km_historik").insert({
+                        "km": current_km, 
+                        "diff": diff,
+                        "batteri_procent": current_bat,
+                        "raekkevidde": current_range
+                    }).execute()
                     
+                    print("SUCCES: Alt data gemt i Supabase.")
+                    return 
+
                 except Exception as db_err:
                     print(f"DATABASE FEJL: {db_err}")
-                    # Dette vil afsløre hvis det er RLS eller manglende kolonner!
 
             except Exception as e:
-                print(f"Kunne ikke hente data fra konto {account_id}: {e}")
+                print(f"Fejl ved hentning: {e}")
                 continue
 
 loop = asyncio.get_event_loop()
