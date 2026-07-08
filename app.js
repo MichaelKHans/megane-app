@@ -66,30 +66,62 @@ async function initApp() {
 async function loadDataFromCloud() {
     const { data, error } = await supabaseClient
         .from('km_historik')
-        .select('*')
+        // RETTELSE HER: Henter også de nye batterikolonner
+        .select('km, diff, dato, batteri_procent, raekkevidde')
         .order('dato', { ascending: false }); // Nyeste øverst
 
     if (error) {
         console.error("Kunne ikke hente historik fra skyen:", error);
         // Fallback til sidst kendte km, hvis der ikke er internet
         let savedKm = parseInt(localStorage.getItem('megane_km')) || 77000;
-        updateDashboard(savedKm);
+        // Kalder updateDashboard uden batteridata, hvis offline
+        updateDashboard(savedKm, null, null); 
     } else {
         kmHistory = data || [];
         
         let currentKm = kmHistory.length > 0 ? kmHistory[0].km : (parseInt(localStorage.getItem('megane_km')) || 77000);
+        
+        // Hent de nyeste batterital fra den øverste (nyeste) række i databasen
+        let currentBat = kmHistory.length > 0 ? kmHistory[0].batteri_procent : null;
+        let currentRange = kmHistory.length > 0 ? kmHistory[0].raekkevidde : null;
+        
         localStorage.setItem('megane_km', currentKm); // Lokal backup
         
-        updateDashboard(currentKm);
+        updateDashboard(currentKm, currentBat, currentRange);
         renderHistory();
     }
 }
 
 // --- Opdater skærmen (Forside) ---
-function updateDashboard(currentKm) {
+function updateDashboard(currentKm, currentBat, currentRange) {
     displayKm.innerText = currentKm.toLocaleString('da-DK');
     valMaxIns.innerText = MAX_INSURANCE_KM.toLocaleString('da-DK');
     valMaxWar.innerText = MAX_WARRANTY_TOTAL_KM.toLocaleString('da-DK');
+
+    // TILFØJELSE HER: Indsæt batteri-info i HTML, hvis elementet findes, eller opret det.
+    let batteryDiv = document.getElementById('battery-info-container');
+    if (!batteryDiv) {
+        // Opret containeren, hvis den ikke findes (indsættes lige under kilometer-displayet)
+        batteryDiv = document.createElement('div');
+        batteryDiv.id = 'battery-info-container';
+        batteryDiv.style.textAlign = 'center';
+        batteryDiv.style.marginTop = '10px';
+        batteryDiv.style.color = 'var(--text-muted)';
+        batteryDiv.style.fontSize = '14px';
+        
+        // Find elementet, der viser kilometer, og indsæt batteri-div'en lige efter
+        const parentCard = displayKm.closest('.card') || displayKm.parentElement;
+        if (parentCard) {
+            displayKm.parentNode.insertBefore(batteryDiv, displayKm.nextSibling);
+        }
+    }
+    
+    // Hvis der er batteridata, vis dem
+    if (currentBat !== null && currentRange !== null) {
+         batteryDiv.innerHTML = `🔋 ${currentBat}% | 🎯 ${currentRange} km rækkevidde`;
+    } else {
+         batteryDiv.innerHTML = `<span style="font-size: 12px;">Venter på batteridata...</span>`;
+    }
 
     // If Forsikring
     const kmDrivenSinceStart = currentKm - START_KM;
@@ -244,14 +276,19 @@ async function promptForKilometers() {
             // Hvis det er allerførste indtastning i skyen, sæt diff til 0
             const diff = kmHistory.length === 0 ? 0 : newKm - currentSavedKm;
             
+            // Vi sender ikke "falske" batteridata, når vi taster manuelt,
+            // så vi beholder de gamle i viewet, indtil robotten kører igen.
+            const oldBat = kmHistory.length > 0 ? kmHistory[0].batteri_procent : null;
+            const oldRange = kmHistory.length > 0 ? kmHistory[0].raekkevidde : null;
+            
             // 1. Opdater skærmen med det samme for hurtig reaktion
-            const tempEntry = { dato: new Date().toISOString(), km: newKm, diff: diff };
+            const tempEntry = { dato: new Date().toISOString(), km: newKm, diff: diff, batteri_procent: oldBat, raekkevidde: oldRange };
             kmHistory.unshift(tempEntry);
             localStorage.setItem('megane_km', newKm);
-            updateDashboard(newKm);
+            updateDashboard(newKm, oldBat, oldRange);
             renderHistory();
 
-            // 2. Send data til Supabase i baggrunden
+            // 2. Send data til Supabase i baggrunden (uden manuelt batteri input)
             const { error } = await supabaseClient
                 .from('km_historik')
                 .insert([{ km: newKm, diff: diff }]);
@@ -285,7 +322,10 @@ btnEditSettings.addEventListener('click', () => {
     if (newWar) { MAX_WARRANTY_TOTAL_KM = parseInt(newWar); localStorage.setItem('max_war_km', MAX_WARRANTY_TOTAL_KM); }
 
     const currentSavedKm = kmHistory.length > 0 ? kmHistory[0].km : 77000;
-    updateDashboard(currentSavedKm);
+    const currentBat = kmHistory.length > 0 ? kmHistory[0].batteri_procent : null;
+    const currentRange = kmHistory.length > 0 ? kmHistory[0].raekkevidde : null;
+    
+    updateDashboard(currentSavedKm, currentBat, currentRange);
     renderHistory();
 });
 
