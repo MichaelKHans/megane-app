@@ -54,12 +54,24 @@ const btnFragus = document.getElementById('btn-fragus');
 const fragusModal = document.getElementById('fragus-modal');
 const closeFragus = document.getElementById('close-fragus');
 
+// Budget Modal & Elements
+const btnEditBudget = document.getElementById('btn-edit-budget');
+const budgetModal = document.getElementById('budget-modal');
+const closeBudget = document.getElementById('close-budget');
+const btnSaveBudget = document.getElementById('btn-save-budget');
+const inputYdelse = document.getElementById('input-budget-ydelse');
+const inputClever = document.getElementById('input-budget-clever');
+const inputForsikring = document.getElementById('input-budget-forsikring');
+const inputEjerafgift = document.getElementById('input-budget-ejerafgift');
+
 // --- Initialisering ---
 async function initApp() {
     loadDates();
     
     // Hent live-data fra databasen
     await loadDataFromCloud();
+    await loadBudget();
+    await loadAfdragsplan();
 
     // Tjek for MacroDroid genvej
     const urlParams = new URLSearchParams(window.location.search);
@@ -409,6 +421,174 @@ if (fragusModal) {
     window.addEventListener('click', (event) => {
         if (event.target === fragusModal) {
             fragusModal.classList.add('hidden');
+        }
+    });
+}
+
+// --- Bilbudget & Værdiprognose Logik ---
+let currentBudget = { ydelse: 4500, clever: 999, forsikring: 704.93, ejerafgift: 76.67 };
+let afdragsplanData = [];
+
+async function loadBudget() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('bil_finansiering')
+            .select('*')
+            .eq('id', 1)
+            .single();
+        if (!error && data) {
+            currentBudget = data;
+        }
+    } catch (e) {
+        console.error("Fejl ved hentning af budget fra Supabase:", e);
+    }
+    renderBudget();
+}
+
+function renderBudget() {
+    const ydelseVal = document.getElementById('budget-val-ydelse');
+    const cleverVal = document.getElementById('budget-val-clever');
+    const forsikringVal = document.getElementById('budget-val-forsikring');
+    const ejerafgiftVal = document.getElementById('budget-val-ejerafgift');
+    const totalVal = document.getElementById('budget-val-total');
+    
+    if (ydelseVal) ydelseVal.innerText = parseFloat(currentBudget.ydelse).toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kr.';
+    if (cleverVal) cleverVal.innerText = parseFloat(currentBudget.clever).toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kr.';
+    if (forsikringVal) forsikringVal.innerText = parseFloat(currentBudget.forsikring).toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kr.';
+    if (ejerafgiftVal) ejerafgiftVal.innerText = parseFloat(currentBudget.ejerafgift).toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kr.';
+    
+    const total = parseFloat(currentBudget.ydelse) + parseFloat(currentBudget.clever) + parseFloat(currentBudget.forsikring) + parseFloat(currentBudget.ejerafgift);
+    if (totalVal) totalVal.innerText = total.toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kr.';
+}
+
+// Rediger budget modal
+if (btnEditBudget && budgetModal) {
+    btnEditBudget.addEventListener('click', () => {
+        if (inputYdelse) inputYdelse.value = currentBudget.ydelse;
+        if (inputClever) inputClever.value = currentBudget.clever;
+        if (inputForsikring) inputForsikring.value = currentBudget.forsikring;
+        if (inputEjerafgift) inputEjerafgift.value = currentBudget.ejerafgift;
+        budgetModal.classList.remove('hidden');
+    });
+}
+if (closeBudget && budgetModal) {
+    closeBudget.addEventListener('click', () => {
+        budgetModal.classList.add('hidden');
+    });
+}
+
+// Gem budget
+if (btnSaveBudget && budgetModal) {
+    btnSaveBudget.addEventListener('click', async () => {
+        const ydelse = parseFloat(inputYdelse.value) || 0;
+        const clever = parseFloat(inputClever.value) || 0;
+        const forsikring = parseFloat(inputForsikring.value) || 0;
+        const ejerafgift = parseFloat(inputEjerafgift.value) || 0;
+        
+        try {
+            const { error } = await supabaseClient
+                .from('bil_finansiering')
+                .update({ ydelse, clever, forsikring, ejerafgift })
+                .eq('id', 1);
+                
+            if (error) {
+                alert("Kunne ikke gemme budget i Supabase: " + error.message);
+            } else {
+                currentBudget = { id: 1, ydelse, clever, forsikring, ejerafgift };
+                renderBudget();
+                budgetModal.classList.add('hidden');
+            }
+        } catch (e) {
+            alert("Der opstod en fejl under lagring: " + e.message);
+        }
+    });
+}
+
+// Afdragsplan & Prognose
+async function loadAfdragsplan() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('laen_afdragsplan')
+            .select('dato, balance')
+            .order('dato', { ascending: true });
+        if (!error && data) {
+            afdragsplanData = data;
+        }
+    } catch (e) {
+        console.error("Fejl ved hentning af afdragsplan fra Supabase:", e);
+    }
+    renderPrognose();
+}
+
+function getBalanceForDate(dateStr) {
+    if (dateStr > '2031-03-01') return 0;
+    const row = afdragsplanData.find(item => item.dato === dateStr);
+    return row ? parseFloat(row.balance) : 0;
+}
+
+function updateCurrentBalance() {
+    const nu = new Date();
+    const aar = nu.getFullYear();
+    const maaned = String(nu.getMonth() + 1).padStart(2, '0');
+    const datoStr = `${aar}-${maaned}-01`;
+    
+    const balance = getBalanceForDate(datoStr);
+    const displayBalance = document.getElementById('santander-balance');
+    if (displayBalance) {
+        if (balance > 0 || afdragsplanData.length > 0) {
+            displayBalance.innerText = balance.toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kr.';
+        } else {
+            displayBalance.innerText = '0,00 kr. (Afbetalt!)';
+        }
+    }
+}
+
+function renderPrognose() {
+    const prognoseRows = document.getElementById('prognose-rows');
+    if (!prognoseRows) return;
+    
+    const prognoser = [
+        { label: 'NU', dato: '2026-07-01', vaerdi: 215000 },
+        { label: 'Om 1 år', dato: '2027-07-01', vaerdi: 190000 },
+        { label: 'Om 2 år', dato: '2028-07-01', vaerdi: 170000 },
+        { label: 'Om 3 år', dato: '2029-07-01', vaerdi: 150000 },
+        { label: 'Om 4 år', dato: '2030-07-01', vaerdi: 130000 },
+        { label: 'Om 5 år', dato: '2031-07-01', vaerdi: 105000 },
+        { label: 'Om 6 år', dato: '2032-07-01', vaerdi: 90000 },
+        { label: 'Om 7 år', dato: '2033-07-01', vaerdi: 75000 },
+        { label: 'Om 8 år', dato: '2034-07-01', vaerdi: 60000 },
+        { label: 'Om 9 år', dato: '2035-07-01', vaerdi: 50000 },
+        { label: 'Om 10 år', dato: '2036-07-01', vaerdi: 40000 }
+    ];
+    
+    let rowsHtml = '';
+    prognoser.forEach(p => {
+        const restgaeld = getBalanceForDate(p.dato);
+        const overskud = p.vaerdi - restgaeld;
+        
+        // Find årstallet fra datoen til visning
+        const aar = p.dato.substring(0, 4);
+        
+        rowsHtml += `
+            <tr>
+                <td><strong>${p.label}</strong></td>
+                <td>Juli ${aar}</td>
+                <td>${p.vaerdi.toLocaleString('da-DK')} kr.</td>
+                <td style="color: ${restgaeld > 0 ? 'var(--text-main)' : 'var(--text-muted)'};">${restgaeld > 0 ? restgaeld.toLocaleString('da-DK') + ' kr.' : 'Afbetalt'}</td>
+                <td style="text-align: right; font-weight: bold; color: ${overskud >= 0 ? 'var(--success-green)' : 'var(--danger-red)'};">${overskud.toLocaleString('da-DK')} kr.</td>
+            </tr>
+        `;
+    });
+    
+    prognoseRows.innerHTML = rowsHtml;
+    updateCurrentBalance();
+}
+
+// Modal baggrunds lukning for budget modal
+if (budgetModal) {
+    window.addEventListener('click', (event) => {
+        if (event.target === budgetModal) {
+            budgetModal.classList.add('hidden');
         }
     });
 }

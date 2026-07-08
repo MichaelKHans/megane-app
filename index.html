@@ -142,6 +142,56 @@
             </ul>
 
             <button id="btn-fragus" class="primary-btn" style="margin-top: 24px; background-color: var(--warning-yellow); box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);">Fragus GoSafe Garanti</button>
+
+            <!-- Bilbudget & Værdiprognose (NY SEKTION) -->
+            <div class="budget-prognose-wrapper" style="margin-top: 32px; border-top: 1px solid #f0f0f0; padding-top: 24px;">
+                <h3 style="font-size: 16px; margin-bottom: 16px; color: var(--text-main);">Bilbudget & Værdiprognose</h3>
+                
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
+                    <strong>Aktuel restgæld hos Santander:</strong>
+                    <span id="santander-balance" style="font-weight: 800; color: var(--primary-blue);">Henter data...</span>
+                </div>
+
+                <!-- Budget tabel -->
+                <div class="table-container" style="margin-bottom: 24px;">
+                    <table class="budget-table">
+                        <thead>
+                            <tr>
+                                <th>Budgetpost</th>
+                                <th style="text-align: right;">Beløb pr. md.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="budget-rows">
+                            <tr><td>Månedlig ydelse</td><td style="text-align: right;" id="budget-val-ydelse">0,00 kr.</td></tr>
+                            <tr><td>Clever abonnement</td><td style="text-align: right;" id="budget-val-clever">0,00 kr.</td></tr>
+                            <tr><td>Forsikring (If)</td><td style="text-align: right;" id="budget-val-forsikring">0,00 kr.</td></tr>
+                            <tr><td>Grøn ejerafgift</td><td style="text-align: right;" id="budget-val-ejerafgift">0,00 kr.</td></tr>
+                            <tr class="total-row"><td><strong>Månedlig total</strong></td><td style="text-align: right;"><strong><span id="budget-val-total">0,00 kr.</span></strong></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <button id="btn-edit-budget" class="btn-settings" style="width: 100%; margin-top: -8px; margin-bottom: 24px;">⚙️ Rediger bilbudget</button>
+
+                <!-- Værdiprognose tabel -->
+                <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--text-main);">10-årig værdiprognose (overskud ved salg)</h4>
+                <div class="table-container scrollable-table">
+                    <table class="prognose-table">
+                        <thead>
+                            <tr>
+                                <th>Periode</th>
+                                <th>Dato</th>
+                                <th>Bilens værdi</th>
+                                <th>Restgæld</th>
+                                <th style="text-align: right;">Overskud</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prognose-rows">
+                            <!-- Dynamiske rækker genereret i JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
         <!-- 5. UHELD & NØDSITUATION -->
@@ -177,6 +227,36 @@
                     <li style="padding: 8px 0; border-bottom: 1px solid #f9fafb;"><strong>Batteridækning:</strong> HV-batteri dækkes hvis kapaciteten pludseligt falder under 70%</li>
                     <li style="padding: 12px 0 0 0; color: var(--text-muted); font-size: 12px; line-height: 1.4;"><em><strong>Betingelse:</strong> Skal serviceres løbende jf. producentens forskrifter, og Fragus skal godkende skader på forhånd.</em></li>
                 </ul>
+            </div>
+        </div>
+
+        <!-- Budget Redigerings-Modal (NY) -->
+        <div id="budget-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-btn" id="close-budget">&times;</span>
+                <h3 style="margin-bottom: 16px; font-size: 18px; color: var(--text-main); border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;">Rediger Bilbudget</h3>
+                
+                <div class="input-group" style="margin-bottom: 12px; text-align: left;">
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Månedlig ydelse (kr.):</label>
+                    <input type="number" id="input-budget-ydelse" class="modal-input" step="0.01" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
+                </div>
+                
+                <div class="input-group" style="margin-bottom: 12px; text-align: left;">
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Clever abonnement (kr.):</label>
+                    <input type="number" id="input-budget-clever" class="modal-input" step="0.01" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
+                </div>
+                
+                <div class="input-group" style="margin-bottom: 12px; text-align: left;">
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Forsikring (kr.):</label>
+                    <input type="number" id="input-budget-forsikring" class="modal-input" step="0.01" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
+                </div>
+                
+                <div class="input-group" style="margin-bottom: 20px; text-align: left;">
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Grøn ejerafgift (kr.):</label>
+                    <input type="number" id="input-budget-ejerafgift" class="modal-input" step="0.01" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
+                </div>
+                
+                <button id="btn-save-budget" class="primary-btn" style="background-color: var(--success-green); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);">Gem budget</button>
             </div>
         </div>
 
