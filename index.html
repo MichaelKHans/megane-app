@@ -141,7 +141,26 @@
                 <li><strong>Dækstørrelse:</strong> 215/45 R20 (Monteret 10.10.2025)</li>
             </ul>
 
-            <button id="btn-fragus" class="primary-btn" style="margin-top: 24px; background-color: var(--warning-yellow); box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);">Fragus GoSafe Garanti</button>
+            <!-- Batteriets Sundhedstilstand (SoH) (NYT) -->
+            <div class="soh-container" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 12px; margin-top: 24px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <strong style="font-size: 14px; color: var(--text-main);">Batteriets Sundhedstilstand (SoH)</strong>
+                    <span id="soh-pct-display" style="font-weight: 800; color: var(--success-green); font-size: 15px;">100.00%</span>
+                </div>
+                <!-- Progress bar container -->
+                <div style="background: #cbd5e1; height: 16px; border-radius: 8px; position: relative; overflow: visible; margin-bottom: 12px;">
+                    <!-- Fragus limit marker at 70% -->
+                    <div style="position: absolute; left: 70%; top: -4px; bottom: -4px; width: 3px; background-color: var(--danger-red); z-index: 10;" title="Fragus Garanti Grænse (70%)"></div>
+                    <div id="soh-progress-bar" style="background: linear-gradient(90deg, var(--danger-red) 0%, var(--warning-yellow) 70%, var(--success-green) 100%); width: 100%; height: 100%; border-radius: 8px; transition: width 0.5s ease;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); line-height: 1;">
+                    <span>0%</span>
+                    <span style="color: var(--danger-red); font-weight: bold; position: relative; left: -10px;">70% (Fragus grænse)</span>
+                    <span>100%</span>
+                </div>
+            </div>
+
+            <button id="btn-fragus" class="primary-btn" style="background-color: var(--warning-yellow); box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);">Fragus GoSafe Garanti</button>
 
             <!-- Bilbudget & Værdiprognose (NY SEKTION) -->
             <div class="budget-prognose-wrapper" style="margin-top: 32px; border-top: 1px solid #f0f0f0; padding-top: 24px;">
@@ -166,6 +185,7 @@
                             <tr><td>Clever abonnement</td><td style="text-align: right;" id="budget-val-clever">0,00 kr.</td></tr>
                             <tr><td>Forsikring (If)</td><td style="text-align: right;" id="budget-val-forsikring">0,00 kr.</td></tr>
                             <tr><td>Grøn ejerafgift</td><td style="text-align: right;" id="budget-val-ejerafgift">0,00 kr.</td></tr>
+                            <tr><td>Dæk & Vedligeholdelse</td><td style="text-align: right;" id="budget-val-vedligeholdelse">0,00 kr.</td></tr>
                             <tr class="total-row"><td><strong>Månedlig total</strong></td><td style="text-align: right;"><strong><span id="budget-val-total">0,00 kr.</span></strong></td></tr>
                         </tbody>
                     </table>
@@ -188,6 +208,63 @@
                         </thead>
                         <tbody id="prognose-rows">
                             <!-- Dynamiske rækker genereret i JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Overvejer du ny bil? (Kandidat Garage) (NY) -->
+            <div class="candidate-garage-wrapper" style="margin-top: 32px; border-top: 1px solid #f0f0f0; padding-top: 24px;">
+                <h3 style="font-size: 16px; margin-bottom: 8px; color: var(--text-main);">Overvejer du ny bil? (Kandidat Garage)</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Her kan du se og administrere dine bilkandidater fra databasen.</p>
+                
+                <div id="garage-list" class="garage-list-grid" style="display: grid; gap: 16px; margin-bottom: 20px;">
+                    <!-- Dynamisk indhold fra Supabase -->
+                </div>
+            </div>
+
+            <!-- Sammenligningsrapport (NY) -->
+            <div class="comparison-wrapper" style="margin-top: 32px; border-top: 1px solid #f0f0f0; padding-top: 24px;">
+                <h3 style="font-size: 16px; margin-bottom: 8px; color: var(--text-main);">Sammenligningsrapport</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Sammenligning af TCO (samlede månedlige ejeromkostninger) og specifikationer side om side.</p>
+                
+                <!-- Udbetalingstype vælger (NY) -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: 10px; margin-bottom: 16px; font-size: 13px;">
+                    <strong style="display: block; margin-bottom: 10px; color: var(--text-main);">Udbetalingstype:</strong>
+                    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
+                        <input type="radio" name="down-payment-mode" id="dp-mode-equity" value="equity" checked style="accent-color: var(--primary-blue);">
+                        <span>Brug nuværende bil som bytte (Friværdi)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
+                        <input type="radio" name="down-payment-mode" id="dp-mode-zero" value="zero" style="accent-color: var(--primary-blue);">
+                        <span>Uden udbetaling (0 kr.)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
+                        <input type="radio" name="down-payment-mode" id="dp-mode-custom" value="custom" style="accent-color: var(--primary-blue);">
+                        <span>Egen kontant udbetaling (Indtast beløb)</span>
+                    </label>
+                    <div id="dp-custom-input-wrap" style="display: none; margin-top: 8px;">
+                        <input type="number" id="dp-custom-amount" min="0" step="1000" placeholder="F.eks. 50000" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main); font-size: 13px;">
+                    </div>
+                </div>
+
+                <div id="dp-equity-info" style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 13px;">
+                    <strong>Friværdi i nuværende bil:</strong> 
+                    <span id="txt-current-equity" style="font-weight: bold; color: var(--primary-blue);">Udregner...</span>
+                    <span style="display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px;">Friværdien modregnes automatisk som udbetaling på kandidaterne, hvilket reducerer lånebehovet.</span>
+                </div>
+
+                <div class="table-container scrollable-table">
+                    <table class="prognose-table" style="font-size: 13px;">
+                        <thead>
+                            <tr id="compare-header">
+                                <th>Specifikation</th>
+                                <th>Aktiv bil</th>
+                                <!-- Kandidat kolonner indsættes her -->
+                            </tr>
+                        </thead>
+                        <tbody id="compare-rows">
+                            <!-- Sammenligningsrækker genereret i JS -->
                         </tbody>
                     </table>
                 </div>
@@ -251,12 +328,60 @@
                     <input type="number" id="input-budget-forsikring" class="modal-input" step="0.01" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
                 </div>
                 
-                <div class="input-group" style="margin-bottom: 20px; text-align: left;">
+                <div class="input-group" style="margin-bottom: 12px; text-align: left;">
                     <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Grøn ejerafgift (kr.):</label>
                     <input type="number" id="input-budget-ejerafgift" class="modal-input" step="0.01" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
                 </div>
                 
+                <div class="input-group" style="margin-bottom: 12px; text-align: left;">
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Dæk & Vedligeholdelse (kr.):</label>
+                    <input type="number" id="input-budget-vedligeholdelse" class="modal-input" step="0.01" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
+                </div>
+                
+                <div class="input-group" style="margin-bottom: 20px; text-align: left;">
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Batterihelbred SoH (%):</label>
+                    <input type="number" id="input-budget-soh" class="modal-input" min="0" max="100" step="0.1" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
+                </div>
+                
                 <button id="btn-save-budget" class="primary-btn" style="background-color: var(--success-green); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);">Gem budget</button>
+            </div>
+        </div>
+
+        <!-- Nyt Lån / Afdragsplan Modal (NY) -->
+        <div id="new-loan-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-btn" id="close-new-loan">&times;</span>
+                <h3 style="margin-bottom: 16px; font-size: 18px; color: var(--text-main); border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;">Ny Afdragsplan</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Vælg hvordan du vil oprette afdragsplanen for din nye bil:</p>
+                
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; margin-bottom: 16px; text-align: left;">
+                    <p style="font-size: 13px; margin: 4px 0; color: var(--text-main);"><strong>Bil:</strong> <span id="txt-new-loan-car" style="font-weight: bold;">Model</span></p>
+                    <p style="font-size: 13px; margin: 4px 0; color: var(--text-main);"><strong>Lånebeløb (efter friværdi):</strong> <span id="txt-new-loan-principal" style="font-weight: bold; color: var(--primary-blue);">0,00 kr.</span></p>
+                    <p style="font-size: 13px; margin: 4px 0; color: var(--text-main);"><strong>Rente:</strong> <span id="txt-new-loan-rate" style="font-weight: bold;">0%</span></p>
+                </div>
+
+                <div class="tab-buttons" style="display: flex; gap: 8px; margin-bottom: 16px;">
+                    <button id="tab-btn-auto" class="edit-btn" style="margin: 0; padding: 10px 12px; background: var(--primary-blue); color: white; border-radius: 8px; font-size: 12px; font-weight: bold; flex: 1; border: none; cursor: pointer;">Automatisk (Simuleret)</button>
+                    <button id="tab-btn-manual" class="edit-btn" style="margin: 0; padding: 10px 12px; background: #f1f5f9; color: var(--text-main); border-radius: 8px; font-size: 12px; font-weight: bold; flex: 1; border: 1px solid #e2e8f0; cursor: pointer;">Manuel JSON</button>
+                </div>
+
+                <!-- Automatisk form -->
+                <div id="form-auto-plan">
+                    <div class="input-group" style="margin-bottom: 16px; text-align: left;">
+                        <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Løbetid i måneder (f.eks. 84):</label>
+                        <input type="number" id="input-loan-months" value="84" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
+                    </div>
+                    <button id="btn-generate-auto-loan" class="primary-btn" style="background-color: var(--success-green); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);">Generer & Gem Afdragsplan</button>
+                </div>
+
+                <!-- Manuel JSON form -->
+                <div id="form-manual-plan" class="hidden">
+                    <div class="input-group" style="margin-bottom: 16px; text-align: left;">
+                        <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Indtast afdragsplan JSON:</label>
+                        <textarea id="input-loan-json" placeholder='[{"dato": "2026-08-01", "ydelse": 4500, "gebyr": 45, "rente": 1000, "afdrag": 3500, "balance": 295500}, ...]' style="width: 100%; height: 120px; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main); font-family: monospace; font-size: 11px; box-sizing: border-box;"></textarea>
+                    </div>
+                    <button id="btn-save-manual-loan" class="primary-btn" style="background-color: var(--success-green); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);">Gem Manuel Afdragsplan</button>
+                </div>
             </div>
         </div>
 

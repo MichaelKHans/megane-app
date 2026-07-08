@@ -328,3 +328,52 @@ h2 {
     width: 100%;
     -webkit-overflow-scrolling: touch;
 }
+
+/* --- Kandidat Garage & TCO Sammenligning --- */
+.garage-list-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 12px;
+}
+.candidate-card {
+    background-color: var(--card-bg);
+    border: 1px solid #e2e8f0;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+.candidate-card:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07);
+    border-color: #cbd5e1;
+}
+.spec-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    font-size: 12px;
+    margin-top: 8px;
+    margin-bottom: 12px;
+}
+.spec-item {
+    background-color: #f8fafc;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid #f1f5f9;
+}
+.spec-item strong {
+    display: block;
+    color: var(--text-muted);
+    font-size: 10px;
+    text-transform: uppercase;
+}
+.spec-item span {
+    font-weight: bold;
+    color: var(--text-main);
+}
+.tab-buttons button.active {
+    background-color: var(--primary-blue) !important;
+    color: white !important;
+    border-color: var(--primary-blue) !important;
+}
