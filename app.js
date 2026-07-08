@@ -40,12 +40,19 @@ const chartCanvas = document.getElementById('monthlyChart');
 const navHome = document.getElementById('nav-home');
 const navHistory = document.getElementById('nav-history');
 const navDates = document.getElementById('nav-dates');
+const navCarInfo = document.getElementById('nav-car-info');
 const navEmergency = document.getElementById('nav-emergency');
 
 const sectionDashboard = document.getElementById('dashboard');
 const sectionHistory = document.getElementById('history-section');
 const sectionDates = document.getElementById('dates-section');
+const sectionCarInfo = document.getElementById('car-info-section');
 const sectionEmergency = document.getElementById('emergency-section');
+
+// Fragus Modal
+const btnFragus = document.getElementById('btn-fragus');
+const fragusModal = document.getElementById('fragus-modal');
+const closeFragus = document.getElementById('close-fragus');
 
 // --- Initialisering ---
 async function initApp() {
@@ -366,11 +373,13 @@ function switchSection(activeNavBtn, sectionToShow) {
     navHome.classList.remove('active');
     navHistory.classList.remove('active');
     navDates.classList.remove('active');
+    if (navCarInfo) navCarInfo.classList.remove('active');
     navEmergency.classList.remove('active');
     
     sectionDashboard.classList.add('hidden');
     sectionHistory.classList.add('hidden');
     sectionDates.classList.add('hidden');
+    if (sectionCarInfo) sectionCarInfo.classList.add('hidden');
     sectionEmergency.classList.add('hidden');
     
     activeNavBtn.classList.add('active');
@@ -380,7 +389,29 @@ function switchSection(activeNavBtn, sectionToShow) {
 navHome.addEventListener('click', () => switchSection(navHome, sectionDashboard));
 navHistory.addEventListener('click', () => switchSection(navHistory, sectionHistory));
 navDates.addEventListener('click', () => switchSection(navDates, sectionDates));
+if (navCarInfo && sectionCarInfo) {
+    navCarInfo.addEventListener('click', () => switchSection(navCarInfo, sectionCarInfo));
+}
 navEmergency.addEventListener('click', () => switchSection(navEmergency, sectionEmergency));
+
+// --- Fragus Modal Logik ---
+if (btnFragus && fragusModal) {
+    btnFragus.addEventListener('click', () => {
+        fragusModal.classList.remove('hidden');
+    });
+}
+if (closeFragus && fragusModal) {
+    closeFragus.addEventListener('click', () => {
+        fragusModal.classList.add('hidden');
+    });
+}
+if (fragusModal) {
+    window.addEventListener('click', (event) => {
+        if (event.target === fragusModal) {
+            fragusModal.classList.add('hidden');
+        }
+    });
+}
 
 // Start
 initApp();

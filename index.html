@@ -123,17 +123,28 @@
                     <button class="edit-btn" data-edit="val-date-garanti" data-title="Garanti Udløb">✏️</button>
                 </li>
             </ul>
+        </section>
 
-            <h2 style="margin-top: 32px;">Bil & Forsikring</h2>
+        <!-- 4. BIL & FORSIKRING (NY SEKTION) -->
+        <section id="car-info-section" class="card hidden">
+            <h2>Bil & Forsikring</h2>
+            
+            <div class="stamdata-box" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 12px; margin-bottom: 20px; font-family: monospace; font-size: 14px;">
+                <p style="margin: 4px 0; display: flex; justify-content: space-between;"><strong>Nummerplade:</strong> <span>EM 37 761</span></p>
+                <p style="margin: 4px 0; display: flex; justify-content: space-between;"><strong>Stelnummer:</strong> <span>VF1RCB00468400095</span></p>
+            </div>
+
             <ul class="info-list">
                 <li><strong>Forsikring:</strong> If (Police: 582382857)</li>
                 <li><strong>Selvrisiko:</strong> 4.000 kr. (Glas: 2.000 kr. / Stenslag: 0 kr.)</li>
                 <li><strong>Dæk:</strong> Continental AllSeasonContact 2 XL Evc</li>
                 <li><strong>Dækstørrelse:</strong> 215/45 R20 (Monteret 10.10.2025)</li>
             </ul>
+
+            <button id="btn-fragus" class="primary-btn" style="margin-top: 24px; background-color: var(--warning-yellow); box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);">Fragus GoSafe Garanti</button>
         </section>
 
-        <!-- 4. UHELD & NØDSITUATION -->
+        <!-- 5. UHELD & NØDSITUATION -->
         <section id="emergency-section" class="card hidden emergency-card">
             <h2>🚨 Hvis uheldet er ude</h2>
             <p class="emergency-sub">Sørg for sikkerhed først (refleksvest og trekant). Brug derefter knapperne.</p>
@@ -154,6 +165,21 @@
             </div>
         </section>
 
+        <!-- Fragus Garanti Modal -->
+        <div id="fragus-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-btn" id="close-fragus">&times;</span>
+                <h3 style="margin-bottom: 16px; font-size: 18px; color: var(--text-main); border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;">Fragus GoSafe Garanti</h3>
+                <ul style="list-style: none; padding: 0; font-size: 14px; line-height: 1.6;">
+                    <li style="padding: 8px 0; border-bottom: 1px solid #f9fafb;"><strong>Type:</strong> GoSafe Complete Electric</li>
+                    <li style="padding: 8px 0; border-bottom: 1px solid #f9fafb;"><strong>Udløb:</strong> 20.06.2030 eller 150.000 km (hvad der kommer først)</li>
+                    <li style="padding: 8px 0; border-bottom: 1px solid #f9fafb;"><strong>Reparationsloft:</strong> 75.000 DKK inkl. moms pr. skade</li>
+                    <li style="padding: 8px 0; border-bottom: 1px solid #f9fafb;"><strong>Batteridækning:</strong> HV-batteri dækkes hvis kapaciteten pludseligt falder under 70%</li>
+                    <li style="padding: 12px 0 0 0; color: var(--text-muted); font-size: 12px; line-height: 1.4;"><em><strong>Betingelse:</strong> Skal serviceres løbende jf. producentens forskrifter, og Fragus skal godkende skader på forhånd.</em></li>
+                </ul>
+            </div>
+        </div>
+
     </main>
 
     <nav class="bottom-nav">
@@ -168,6 +194,10 @@
         <button class="nav-item" id="nav-dates">
             <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/></svg>
             <span>Datoer</span>
+        </button>
+        <button class="nav-item" id="nav-car-info">
+            <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
+            <span>Bil & Info</span>
         </button>
         <button class="nav-item emergency" id="nav-emergency">
             <svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
