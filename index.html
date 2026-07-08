@@ -218,9 +218,10 @@
                 <h3 style="font-size: 16px; margin-bottom: 8px; color: var(--text-main);">Overvejer du ny bil? (Kandidat Garage)</h3>
                 <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Her kan du se og administrere dine bilkandidater fra databasen.</p>
                 
-                <div id="garage-list" class="garage-list-grid" style="display: grid; gap: 16px; margin-bottom: 20px;">
+                <div id="garage-list" class="garage-list-grid" style="display: grid; gap: 16px; margin-bottom: 16px;">
                     <!-- Dynamisk indhold fra Supabase -->
                 </div>
+                <button id="btn-add-candidate" class="primary-btn" style="width: 100%; background: linear-gradient(135deg, #6366f1, #8b5cf6); box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25); font-size: 14px;">➕ Tilføj ny bilkandidat</button>
             </div>
 
             <!-- Sammenligningsrapport (NY) -->
@@ -386,6 +387,55 @@
         </div>
 
     </main>
+
+        <!-- Tilføj Kandidat Modal (NY) -->
+        <div id="add-candidate-modal" class="modal hidden">
+            <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+                <span class="close-btn" id="close-add-candidate">&times;</span>
+                <h3 style="margin-bottom: 6px; font-size: 18px; color: var(--text-main); border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;">Tilføj ny bilkandidat</h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Udfyld felterne og gem — bilen dukker automatisk op i garagen og sammenligningen.</p>
+
+                <div class="input-group" style="margin-bottom: 11px; text-align: left;">
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Modelnavn:</label>
+                    <input type="text" id="nc-model-navn" placeholder="F.eks. Tesla Model 3 Long Range" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
+                </div>
+                <div class="input-group" style="margin-bottom: 11px; text-align: left;">
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Salgspris (kr.):</label>
+                    <input type="number" id="nc-pris" min="0" step="1000" placeholder="F.eks. 349000" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
+                </div>
+                <div class="input-group" style="margin-bottom: 11px; text-align: left;">
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Finansieringsrente (% p.a.):</label>
+                    <input type="number" id="nc-rente" min="0" max="30" step="0.01" placeholder="F.eks. 3.99" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
+                </div>
+                <div class="input-group" style="margin-bottom: 11px; text-align: left;">
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Månedlig forsikring (kr.):</label>
+                    <input type="number" id="nc-forsikring" min="0" step="1" placeholder="F.eks. 800" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
+                </div>
+                <div class="input-group" style="margin-bottom: 11px; text-align: left;">
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Grøn ejerafgift pr. md. (kr.):</label>
+                    <input type="number" id="nc-ejerafgift" min="0" step="1" placeholder="F.eks. 78" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
+                </div>
+                <div class="input-group" style="margin-bottom: 11px; text-align: left;">
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">WLTP Rækkevidde (km):</label>
+                    <input type="number" id="nc-wltp" min="0" step="1" placeholder="F.eks. 500" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
+                </div>
+                <div class="input-group" style="margin-bottom: 11px; text-align: left;">
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Max ladehastighed (kW):</label>
+                    <input type="number" id="nc-ladehastighed" min="0" step="1" placeholder="F.eks. 150" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
+                </div>
+                <div class="input-group" style="margin-bottom: 11px; text-align: left;">
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Bagagerum (liter):</label>
+                    <input type="number" id="nc-bagagerum" min="0" step="1" placeholder="F.eks. 440" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
+                </div>
+                <div class="input-group" style="margin-bottom: 20px; text-align: left;">
+                    <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--text-main);">Anhængertræk (kg):</label>
+                    <input type="number" id="nc-traek" min="0" step="50" placeholder="F.eks. 1500" class="modal-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; background: var(--card-bg); color: var(--text-main);">
+                </div>
+
+                <p id="nc-error-msg" style="color: var(--danger-red); font-size: 13px; margin-bottom: 10px; display: none;"></p>
+                <button id="btn-save-candidate" class="primary-btn" style="width: 100%; background: linear-gradient(135deg, #6366f1, #8b5cf6); box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);">Gem kandidat</button>
+            </div>
+        </div>
 
     <nav class="bottom-nav">
         <button class="nav-item active" id="nav-home">

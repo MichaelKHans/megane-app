@@ -1116,5 +1116,91 @@ if (newLoanModal) {
     });
 }
 
+// --- Tilføj Kandidat Modal ---
+const addCandidateModal  = document.getElementById('add-candidate-modal');
+const btnAddCandidate    = document.getElementById('btn-add-candidate');
+const closeAddCandidate  = document.getElementById('close-add-candidate');
+const btnSaveCandidate   = document.getElementById('btn-save-candidate');
+const ncErrorMsg         = document.getElementById('nc-error-msg');
+
+function openAddCandidateModal() {
+    // Ryd formularens felter
+    ['nc-model-navn','nc-pris','nc-rente','nc-forsikring','nc-ejerafgift',
+     'nc-wltp','nc-ladehastighed','nc-bagagerum','nc-traek'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    if (ncErrorMsg) { ncErrorMsg.style.display = 'none'; ncErrorMsg.innerText = ''; }
+    if (addCandidateModal) addCandidateModal.classList.remove('hidden');
+}
+
+if (btnAddCandidate) btnAddCandidate.addEventListener('click', openAddCandidateModal);
+
+if (closeAddCandidate && addCandidateModal) {
+    closeAddCandidate.addEventListener('click', () => addCandidateModal.classList.add('hidden'));
+}
+
+window.addEventListener('click', (event) => {
+    if (event.target === addCandidateModal) {
+        addCandidateModal.classList.add('hidden');
+    }
+});
+
+if (btnSaveCandidate) {
+    btnSaveCandidate.addEventListener('click', async () => {
+        const modelNavn      = (document.getElementById('nc-model-navn')?.value || '').trim();
+        const pris           = parseFloat(document.getElementById('nc-pris')?.value) || 0;
+        const rente          = parseFloat(document.getElementById('nc-rente')?.value) || 0;
+        const forsikring     = parseFloat(document.getElementById('nc-forsikring')?.value) || 0;
+        const ejerafgift     = parseFloat(document.getElementById('nc-ejerafgift')?.value) || 0;
+        const wltp_km        = parseInt(document.getElementById('nc-wltp')?.value) || 0;
+        const ladehastighed  = parseInt(document.getElementById('nc-ladehastighed')?.value) || 0;
+        const bagagerum      = parseInt(document.getElementById('nc-bagagerum')?.value) || 0;
+        const traek          = parseInt(document.getElementById('nc-traek')?.value) || 0;
+
+        // Validering
+        if (!modelNavn) {
+            if (ncErrorMsg) { ncErrorMsg.innerText = '⚠️ Modelnavn er påkrævet.'; ncErrorMsg.style.display = 'block'; }
+            return;
+        }
+        if (pris <= 0) {
+            if (ncErrorMsg) { ncErrorMsg.innerText = '⚠️ Salgspris skal være større end 0.'; ncErrorMsg.style.display = 'block'; }
+            return;
+        }
+        if (ncErrorMsg) ncErrorMsg.style.display = 'none';
+
+        const newCandidate = {
+            model_navn: modelNavn,
+            pris, rente, forsikring, ejerafgift,
+            wltp_km,
+            ladehastighed_kw: ladehastighed,
+            bagagerum_liter:  bagagerum,
+            traek_kg:         traek
+        };
+
+        try {
+            btnSaveCandidate.disabled = true;
+            btnSaveCandidate.innerText = 'Gemmer...';
+
+            const { error } = await supabaseClient
+                .from('bil_kandidater')
+                .insert([newCandidate]);
+
+            if (error) {
+                if (ncErrorMsg) { ncErrorMsg.innerText = '❌ Fejl: ' + error.message; ncErrorMsg.style.display = 'block'; }
+            } else {
+                addCandidateModal.classList.add('hidden');
+                await loadCandidates(); // Genindlæs liste og opdater sammenligning
+            }
+        } catch (e) {
+            if (ncErrorMsg) { ncErrorMsg.innerText = '❌ Uventet fejl: ' + e.message; ncErrorMsg.style.display = 'block'; }
+        } finally {
+            btnSaveCandidate.disabled = false;
+            btnSaveCandidate.innerText = 'Gem kandidat';
+        }
+    });
+}
+
 // Start
 initApp();
+
