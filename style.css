@@ -328,6 +328,10 @@ h2 {
     font-size: 15px;
     color: var(--text-main);
 }
+.prognose-table td, .prognose-table th { padding: 10px 3px; }
+.prognose-table th { font-size: 10px; letter-spacing: 0; }
+.prognose-table td { font-size: 12px; white-space: nowrap; }
+
 .scrollable-table {
     overflow-x: auto;
     display: block;

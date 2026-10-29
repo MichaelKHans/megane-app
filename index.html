@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Megane">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2.1">
 </head>
 <body>
     
@@ -194,15 +194,14 @@
                 <button id="btn-edit-budget" class="btn-settings" style="width: 100%; margin-top: -8px; margin-bottom: 24px;">⚙️ Rediger bilbudget</button>
 
                 <!-- Værdiprognose tabel -->
-                <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--text-main);">10-årig værdiprognose (overskud ved salg)</h4>
+                <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--text-main);">10-årig værdiprognose (overskud ved salg, kr.)</h4>
                 <div class="table-container scrollable-table">
                     <table class="prognose-table">
                         <thead>
                             <tr>
-                                <th>Periode</th>
-                                <th>Dato</th>
-                                <th>Bilens værdi</th>
-                                <th>Restgæld</th>
+                                <th>Hvornår</th>
+                                <th style="text-align: right;">Værdi</th>
+                                <th style="text-align: right;">Restgæld</th>
                                 <th style="text-align: right;">Overskud</th>
                             </tr>
                         </thead>
@@ -218,7 +217,8 @@
             <!-- Overvejer du ny bil? (Kandidat Garage) (NY) -->
             <div class="candidate-garage-wrapper" style="margin-top: 32px; border-top: 1px solid #f0f0f0; padding-top: 24px;">
                 <h3 style="font-size: 16px; margin-bottom: 8px; color: var(--text-main);">Overvejer du ny bil? (Kandidat Garage)</h3>
-                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Her kan du se og administrere dine bilkandidater fra databasen.</p>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Opdateres automatisk hver søndag morgen. Du kan stadig selv tilføje biler.</p>
+                <p id="garage-updated" style="font-size: 12px; color: var(--primary-blue); font-weight: 600; margin: -8px 0 16px 0;"></p>
                 
                 <div id="garage-list" class="garage-list-grid" style="display: grid; gap: 16px; margin-bottom: 16px;">
                     <!-- Dynamisk indhold fra Supabase -->
@@ -481,6 +481,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <script src="app.js"></script>
+    <script src="app.js?v=2.1"></script>
 </body>
 </html>

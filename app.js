@@ -802,11 +802,10 @@ function renderPrognose() {
         
         rowsHtml += `
             <tr>
-                <td><strong>${label}</strong></td>
-                <td>${dateLabel}</td>
-                <td>${estValue.toLocaleString('da-DK')} kr.</td>
-                <td style="color: ${restgaeld > 0 ? 'var(--text-main)' : 'var(--text-muted)'};">${restgaeld > 0 ? restgaeld.toLocaleString('da-DK') + ' kr.' : 'Afbetalt'}</td>
-                <td style="text-align: right; font-weight: bold; color: ${overskud >= 0 ? 'var(--success-green)' : 'var(--danger-red)'};">${overskud.toLocaleString('da-DK')} kr.</td>
+                <td><strong>${label}</strong><br><small style="color: var(--text-muted);">${dateLabel}</small></td>
+                <td style="text-align: right;">${estValue.toLocaleString('da-DK')}</td>
+                <td style="text-align: right; color: ${restgaeld > 0 ? 'var(--text-main)' : 'var(--text-muted)'};">${restgaeld > 0 ? restgaeld.toLocaleString('da-DK') : 'Betalt'}</td>
+                <td style="text-align: right; font-weight: bold; color: ${overskud >= 0 ? 'var(--success-green)' : 'var(--danger-red)'};">${overskud.toLocaleString('da-DK')}</td>
             </tr>
         `;
     }
@@ -860,6 +859,7 @@ async function loadCandidates() {
         const { data, error } = await supabaseClient
             .from('bil_kandidater')
             .select('*')
+            .order('salgsplacering', { ascending: true, nullsFirst: false })
             .order('model_navn', { ascending: true });
         if (!error && data) {
             candidatesData = data;
@@ -880,6 +880,15 @@ function renderCandidates() {
         return;
     }
     
+    // Vis hvornår den ugentlige liste sidst blev hentet
+    const updated = candidatesData.map(c => c.opdateret).filter(Boolean).sort().pop();
+    const updatedInfo = document.getElementById('garage-updated');
+    if (updatedInfo) {
+        updatedInfo.innerText = updated
+            ? `Mest solgte elbiler under 450.000 kr. · opdateret ${new Date(updated).toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'short' })}`
+            : '';
+    }
+
     let html = '';
     candidatesData.forEach(c => {
         const cPrice = parseFloat(c.pris);
@@ -890,7 +899,7 @@ function renderCandidates() {
         
         html += `
             <div class="candidate-card">
-                <h4 style="margin: 0 0 8px 0; font-size: 15px; color: var(--text-main);">${c.model_navn}</h4>
+                <h4 style="margin: 0 0 8px 0; font-size: 15px; color: var(--text-main);">${c.salgsplacering ? `#${c.salgsplacering} ` : ''}${c.model_navn}</h4>
                 <div style="font-size: 18px; font-weight: 800; color: var(--primary-blue); margin-bottom: 8px;">
                     ${parseFloat(c.pris).toLocaleString('da-DK')} kr.
                 </div>
@@ -915,6 +924,7 @@ function renderCandidates() {
                         <span>${c.traek_kg} kg</span>
                     </div>
                 </div>
+                ${c.kilde_url ? `<a href="${c.kilde_url}" target="_blank" rel="noopener" style="display: block; font-size: 12px; margin: 8px 0;">Se kilde for pris og data ↗</a>` : ''}
                 <button class="primary-btn btn-buy-candidate" data-id="${c.id}" style="width: 100%; margin-top: 8px; font-size: 13px; background-color: var(--success-green); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.15);">Markér som købt</button>
             </div>
         `;

@@ -4,3 +4,4 @@ __pycache__/
 *.backup
 *.backup.gz
 .claude/
+kandidater.json
