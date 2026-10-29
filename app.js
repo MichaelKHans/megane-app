@@ -739,11 +739,13 @@ function getBalanceForDate(dateStr) {
     return row ? parseFloat(row.balance) : 0;
 }
 
+// Første dag i den aktuelle måned som 'YYYY-MM-01' (afdragsplanen har én række pr. måned)
+function monthKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
+}
+
 function updateCurrentBalance() {
-    // Vi bruger dags dato i 2026 (f.eks. juli 2026) som specificeret af brugeren
-    const datoStr = '2026-07-01';
-    
-    const balance = getBalanceForDate(datoStr);
+    const balance = getBalanceForDate(monthKey(new Date()));
     const displayBalance = document.getElementById('santander-balance');
     if (displayBalance) {
         if (balance > 0 || afdragsplanData.length > 0) {
@@ -754,11 +756,28 @@ function updateCurrentBalance() {
     }
 }
 
-function getEstimatedValueForYear(yearOffset, purchasePrice, carName) {
-    if (carName && carName.includes('Megane')) {
-        const vaerdier = [215000, 190000, 170000, 150000, 130000, 115000, 100000, 85000, 70000, 55000, 40000];
-        return vaerdier[Math.min(yearOffset, vaerdier.length - 1)];
-    }
+// --- Markedsværdi (Megane) ---
+// Udgangspunkt: vurdering ud fra brugtmarkedet okt. 2026 (2022 Iconic, ca. 88.000 km:
+// forhandlerpris ca. 185.000, indbytning ca. 165.000). Kan rettes i appen.
+const DEFAULT_MARKET_VALUE = { value: 175000, date: '2026-10-29', pct: 12 };
+
+function getMarketValueSettings() {
+    try {
+        const saved = JSON.parse(localStorage.getItem('markedsvaerdi'));
+        if (saved && saved.value > 0) return { ...DEFAULT_MARKET_VALUE, ...saved };
+    } catch (e) { /* ugyldig eller ingen gemt værdi */ }
+    return DEFAULT_MARKET_VALUE;
+}
+
+// Værdi på en given dato: vurderingen fremskrevet med et fast årligt værditab
+function getMarketValueAt(date) {
+    const { value, date: valuedAt, pct } = getMarketValueSettings();
+    const years = Math.max((date - new Date(valuedAt)) / (365.25 * 86400000), 0);
+    return Math.round(value * Math.pow(1 - pct / 100, years) / 100) * 100;
+}
+
+function getEstimatedValue(date, yearOffset, purchasePrice, carName) {
+    if (carName && carName.includes('Megane')) return getMarketValueAt(date);
     // For andre biler bruger vi 15% årlig afskrivning
     const baseValue = purchasePrice || 300000;
     return Math.round(baseValue * Math.pow(0.85, yearOffset));
@@ -768,25 +787,23 @@ function renderPrognose() {
     const prognoseRows = document.getElementById('prognose-rows');
     if (!prognoseRows) return;
     
-    const purchaseYear = currentBudget.registrerings_dato ? parseInt(currentBudget.registrerings_dato.substring(0, 4)) : 2022;
-    // Vi vil have en 10-årig værdiprognose fra 2026 (Juli 2026 til Juli 2036)
-    const startForecastYear = 2026;
+    const now = new Date();
+    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     
     let rowsHtml = '';
     for (let i = 0; i <= 10; i++) {
-        const forecastYear = startForecastYear + i;
-        const yearOffset = forecastYear - purchaseYear;
+        const rowDate = new Date(firstOfMonth.getFullYear() + i, firstOfMonth.getMonth(), 1);
         const label = i === 0 ? 'NU' : `Om ${i} år`;
-        const dateStr = `${forecastYear}-07-01`;
+        const dateLabel = rowDate.toLocaleDateString('da-DK', { month: 'short', year: 'numeric' });
         
-        const estValue = getEstimatedValueForYear(Math.max(0, yearOffset), parseFloat(currentBudget.koebspris), currentBudget.bil_navn);
-        const restgaeld = getBalanceForDate(dateStr);
+        const estValue = getEstimatedValue(i === 0 ? now : rowDate, i, parseFloat(currentBudget.koebspris), currentBudget.bil_navn);
+        const restgaeld = getBalanceForDate(monthKey(rowDate));
         const overskud = estValue - restgaeld;
         
         rowsHtml += `
             <tr>
                 <td><strong>${label}</strong></td>
-                <td>Juli ${forecastYear}</td>
+                <td>${dateLabel}</td>
                 <td>${estValue.toLocaleString('da-DK')} kr.</td>
                 <td style="color: ${restgaeld > 0 ? 'var(--text-main)' : 'var(--text-muted)'};">${restgaeld > 0 ? restgaeld.toLocaleString('da-DK') + ' kr.' : 'Afbetalt'}</td>
                 <td style="text-align: right; font-weight: bold; color: ${overskud >= 0 ? 'var(--success-green)' : 'var(--danger-red)'};">${overskud.toLocaleString('da-DK')} kr.</td>
@@ -795,7 +812,32 @@ function renderPrognose() {
     }
     
     prognoseRows.innerHTML = rowsHtml;
+
+    const { value, date, pct } = getMarketValueSettings();
+    const info = document.getElementById('prognose-info');
+    if (info) {
+        info.innerText = `Vurdering: ${value.toLocaleString('da-DK')} kr. pr. ${new Date(date).toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' })}, derefter ${pct} % værditab om året.`;
+    }
     updateCurrentBalance();
+}
+
+const btnEditValue = document.getElementById('btn-edit-value');
+if (btnEditValue) {
+    btnEditValue.addEventListener('click', () => {
+        const current = getMarketValueSettings();
+        const valueInput = prompt("Hvad er bilen værd i dag (kr.)? Fx et tilbud fra en forhandler.", getMarketValueAt(new Date()));
+        if (valueInput === null || valueInput.trim() === '') return;
+        const value = parseInt(valueInput.replace(/\D/g, ''));
+        const pctInput = prompt("Forventet værditab pr. år (%)?", current.pct);
+        const pct = pctInput ? parseFloat(pctInput.replace(',', '.')) : current.pct;
+        if (!(value > 0) || !(pct >= 0 && pct < 100)) {
+            alert("Ugyldig værdi eller procent.");
+            return;
+        }
+        localStorage.setItem('markedsvaerdi', JSON.stringify({ value, pct, date: new Date().toISOString().slice(0, 10) }));
+        renderPrognose();
+        renderComparison();
+    });
 }
 
 // --- Digital Garage & TCO Sammenligning ---
@@ -807,8 +849,8 @@ function calculateAnnuityPayment(principal, annualRate, months = 84) {
 }
 
 function getCurrentCarEquity() {
-    const currentCarValue = currentBudget.bil_navn && currentBudget.bil_navn.includes('Megane') ? 215000 : (parseFloat(currentBudget.koebspris) || 233975);
-    const currentRestgaeld = getBalanceForDate('2026-07-01');
+    const currentCarValue = currentBudget.bil_navn && currentBudget.bil_navn.includes('Megane') ? getMarketValueAt(new Date()) : (parseFloat(currentBudget.koebspris) || 233975);
+    const currentRestgaeld = getBalanceForDate(monthKey(new Date()));
     const equity = currentCarValue - currentRestgaeld;
     return Math.max(0, equity);
 }
