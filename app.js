@@ -8,8 +8,27 @@ let START_KM = parseInt(localStorage.getItem('start_km')) || 65000;
 let MAX_INSURANCE_KM = parseInt(localStorage.getItem('max_ins_km')) || 25000;
 let MAX_WARRANTY_TOTAL_KM = parseInt(localStorage.getItem('max_war_km')) || 150000;
 
+// If: årlig kørsel måles pr. forsikringsår, som følger hovedforfald 1. august
+const INSURANCE_RENEWAL_MONTH = 7; // 0 = januar, 7 = august
+const INSURANCE_RENEWAL_DAY = 1;
+
 // Historikken hentes nu live fra Supabase
 let kmHistory = [];
+
+// Starten af det igangværende forsikringsår (seneste 1. august)
+function getInsuranceYearStart(now = new Date()) {
+    let start = new Date(now.getFullYear(), INSURANCE_RENEWAL_MONTH, INSURANCE_RENEWAL_DAY);
+    if (now < start) start.setFullYear(start.getFullYear() - 1);
+    return start;
+}
+
+// Km-stand ved forsikringsårets start: seneste måling før startdatoen.
+// Går historikken ikke så langt tilbage, bruges START_KM (aflæsningen på policen).
+function getKmAtInsuranceYearStart() {
+    const start = getInsuranceYearStart();
+    const before = kmHistory.find(entry => new Date(entry.dato) < start); // nyeste først
+    return before ? before.km : START_KM;
+}
 let monthlyChartInstance = null;
 
 // --- Elementer fra siden ---
@@ -209,16 +228,25 @@ function updateDashboard(currentKm, currentBat, currentRange) {
          batteryDiv.innerHTML = `<span style="font-size: 12px;">Venter på batteridata...</span>`;
     }
 
-    // If Forsikring
-    const kmDrivenSinceStart = currentKm - START_KM;
-    let insuranceLeft = MAX_INSURANCE_KM - kmDrivenSinceStart;
-    if (insuranceLeft < 0) insuranceLeft = 0; 
-    const insurancePercent = (kmDrivenSinceStart / MAX_INSURANCE_KM) * 100;
+    // If Forsikring (km i det igangværende forsikringsår)
+    const kmDrivenThisYear = Math.max(currentKm - getKmAtInsuranceYearStart(), 0);
+    let insuranceLeft = MAX_INSURANCE_KM - kmDrivenThisYear;
+    if (insuranceLeft < 0) insuranceLeft = 0;
+    const insurancePercent = (kmDrivenThisYear / MAX_INSURANCE_KM) * 100;
+
+    // Prognose: nuværende tempo omregnet til et helt forsikringsår
+    const yearStart = getInsuranceYearStart();
+    const daysPassed = Math.max((new Date() - yearStart) / 86400000, 1);
+    const projected = Math.round(kmDrivenThisYear / daysPassed * 365 / 100) * 100;
+    const yearEnd = new Date(yearStart);
+    yearEnd.setFullYear(yearEnd.getFullYear() + 1);
+    yearEnd.setDate(yearEnd.getDate() - 1);
 
     insuranceBar.style.width = Math.min(insurancePercent, 100) + '%';
-    insuranceText.innerText = insuranceLeft.toLocaleString('da-DK') + ' km tilbage af kvoten';
-    
-    if (insuranceLeft < 2000) {
+    insuranceText.innerText = `${insuranceLeft.toLocaleString('da-DK')} km tilbage frem til ${yearEnd.toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' })}`
+        + (daysPassed >= 30 ? ` · prognose ${projected.toLocaleString('da-DK')} km` : '');
+
+    if (insuranceLeft < 2000 || projected > MAX_INSURANCE_KM) {
         insuranceStatus.innerText = 'ADVARSEL';
         insuranceStatus.style.color = 'var(--danger-red)';
         insuranceBar.style.backgroundColor = 'var(--danger-red)';
@@ -247,7 +275,7 @@ function renderHistory() {
     const currentYear = new Date().getFullYear();
 
     const latestKm = kmHistory.length > 0 ? kmHistory[0].km : START_KM;
-    statTotalDriven.innerText = (latestKm - START_KM).toLocaleString('da-DK');
+    statTotalDriven.innerText = Math.max(latestKm - getKmAtInsuranceYearStart(), 0).toLocaleString('da-DK');
 
     // 1. Byg selve listen (HTML)
     kmHistory.forEach(entry => {
@@ -402,7 +430,7 @@ btnAddHistory.addEventListener('click', promptForKilometers);
 
 // --- Rediger indstillinger ---
 btnEditSettings.addEventListener('click', () => {
-    let newStart = prompt("Hvilket kilometertal startede forsikringen på?", START_KM);
+    let newStart = prompt("Km-stand på forsikringspolicen (bruges kun, hvis historikken ikke går tilbage til 1. august)?", START_KM);
     if (newStart) { START_KM = parseInt(newStart); localStorage.setItem('start_km', START_KM); }
 
     let newIns = prompt("Hvor mange km må du køre årligt ifølge If?", MAX_INSURANCE_KM);
