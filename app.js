@@ -256,13 +256,57 @@ function updateDashboard(currentKm, currentBat, currentRange) {
         insuranceBar.style.backgroundColor = 'var(--primary-blue)';
     }
 
-    // GoSafe Garanti
+    // GoSafe Garanti: udløber ved 150.000 km eller på udløbsdatoen – hvad der kommer først
     let warrantyLeft = MAX_WARRANTY_TOTAL_KM - currentKm;
     if (warrantyLeft < 0) warrantyLeft = 0;
     const warrantyPercent = (currentKm / MAX_WARRANTY_TOTAL_KM) * 100;
-
     warrantyBar.style.width = Math.min(warrantyPercent, 100) + '%';
-    warrantyText.innerText = warrantyLeft.toLocaleString('da-DK') + ' km tilbage';
+
+    const fmtDate = d => d.toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' });
+    const warrantyEnd = getWarrantyEndDate();
+    const kmPerDay = getKmPerDay();
+    let warrantyInfo = `${warrantyLeft.toLocaleString('da-DK')} km tilbage · udløber ${fmtDate(warrantyEnd)}`;
+    let effectiveEnd = warrantyEnd;
+    if (kmPerDay > 0) {
+        const kmLimitDate = new Date(Date.now() + warrantyLeft / kmPerDay * 86400000);
+        if (kmLimitDate < warrantyEnd) {
+            effectiveEnd = kmLimitDate;
+            warrantyInfo += `\nMed dit tempo nås ${MAX_WARRANTY_TOTAL_KM.toLocaleString('da-DK')} km ca. ${fmtDate(kmLimitDate)} – før udløbsdatoen`;
+        } else {
+            warrantyInfo += `\nMed dit tempo kommer udløbsdatoen før ${MAX_WARRANTY_TOTAL_KM.toLocaleString('da-DK')} km`;
+        }
+    }
+    warrantyText.innerText = warrantyInfo;
+
+    const monthsLeft = (effectiveEnd - Date.now()) / (30 * 86400000);
+    if (monthsLeft < 6) {
+        warrantyStatus.innerText = monthsLeft <= 0 ? 'UDLØBET' : 'SNART';
+        warrantyStatus.style.color = 'var(--danger-red)';
+    } else {
+        warrantyStatus.innerText = 'OK';
+        warrantyStatus.style.color = 'var(--success-green)';
+    }
+}
+
+// Udløbsdato fra "Datoer"-fanen, fx "1. september 2029" eller "01.09.2029"
+function getWarrantyEndDate() {
+    const text = document.getElementById('val-date-garanti').innerText.trim().toLowerCase();
+    const months = ['januar', 'februar', 'marts', 'april', 'maj', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'december'];
+    let m = text.match(/^(\d{1,2})\.?\s+([a-zæøå]+)\s+(\d{4})$/);
+    if (m && months.indexOf(m[2]) >= 0) return new Date(+m[3], months.indexOf(m[2]), +m[1]);
+    m = text.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{4})$/);
+    if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
+    return new Date(2029, 8, 1);
+}
+
+// Gennemsnitlig kørsel pr. dag ud fra historikken (op til det seneste år)
+function getKmPerDay() {
+    if (kmHistory.length < 2) return 0;
+    const newest = kmHistory[0];
+    const yearAgo = Date.now() - 365 * 86400000;
+    const oldest = [...kmHistory].reverse().find(e => new Date(e.dato) >= yearAgo) || kmHistory[kmHistory.length - 1];
+    const days = (new Date(newest.dato) - new Date(oldest.dato)) / 86400000;
+    return days >= 30 ? (newest.km - oldest.km) / days : 0;
 }
 
 // --- Opdater Historik Liste & Tegn Graf ---
