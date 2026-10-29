@@ -2,28 +2,32 @@ name: Hent Megane Kilometer
 
 on:
   schedule:
-    # Kører hver nat kl. 03:00 (Dansk tid ca. 04:00)
+    # Kører hver nat kl. 03:00 UTC (dansk tid 04:00/05:00)
     - cron: '0 3 * * *'
-  workflow_dispatch: 
+  workflow_dispatch:
     # Gør at du kan starte den manuelt med en knap for at teste
+
+permissions:
+  contents: read
+  actions: write # bruges til at holde workflowen aktiv
 
 jobs:
   update-km:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Hent koden
         uses: actions/checkout@v4
-        
+
       - name: Sæt Python op
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          
+          python-version: '3.12'
+          cache: pip
+
       - name: Installer biblioteker
-        run: |
-          pip install renault-api supabase aiohttp
-          
+        run: pip install -r requirements.txt
+
       - name: Kør robotten!
         env:
           RENAULT_USER: ${{ secrets.RENAULT_USER }}
@@ -31,3 +35,11 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: python update_km.py
+
+      # GitHub slår planlagte workflows fra efter 60 dage uden aktivitet i repoet.
+      # Ved at "aktivere" workflowen ved hver kørsel nulstilles den tæller.
+      - name: Hold workflowen aktiv
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow enable robot.yml --repo ${{ github.repository }}

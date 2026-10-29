@@ -81,19 +81,68 @@ const txtNewLoanCar = document.getElementById('txt-new-loan-car');
 const txtNewLoanPrincipal = document.getElementById('txt-new-loan-principal');
 const txtNewLoanRate = document.getElementById('txt-new-loan-rate');
 
-// --- Initialisering ---
-async function initApp() {
-    loadDates();
-    
-    // Hent live-data fra databasen
-    await loadDataFromCloud();
+// --- Login ---
+const loginModal = document.getElementById('login-modal');
+const loginForm = document.getElementById('login-form');
+const loginError = document.getElementById('login-error');
+const btnLogin = document.getElementById('btn-login');
+
+async function isLoggedIn() {
+    const { data } = await supabaseClient.auth.getSession();
+    return !!data.session;
+}
+
+loginForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    btnLogin.disabled = true;
+    loginError.classList.add('hidden');
+
+    const { error } = await supabaseClient.auth.signInWithPassword({
+        email: document.getElementById('login-email').value.trim(),
+        password: document.getElementById('login-password').value
+    });
+    btnLogin.disabled = false;
+
+    if (error) {
+        loginError.textContent = 'Forkert e-mail eller adgangskode.';
+        loginError.classList.remove('hidden');
+        return;
+    }
+    loginModal.classList.add('hidden');
+    await loadPrivateData();
+});
+
+// Uden login kan man stadig se km-stand og UHELD-info
+document.getElementById('btn-login-skip').addEventListener('click', () => {
+    loginModal.classList.add('hidden');
+});
+
+// Økonomi-data kræver login
+async function loadPrivateData() {
     await loadBudget();
     await loadAfdragsplan();
     await loadCandidates();
+}
+
+// --- Initialisering ---
+async function initApp() {
+    loadDates();
+
+    // Km-historik kan læses uden login
+    await loadDataFromCloud();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const wantsLogKm = urlParams.get('handling') === 'log-kilometer';
+
+    if (await isLoggedIn()) {
+        await loadPrivateData();
+    } else {
+        loginModal.classList.remove('hidden');
+        return;
+    }
 
     // Tjek for MacroDroid genvej
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('handling') === 'log-kilometer') {
+    if (wantsLogKm) {
         window.history.replaceState({}, document.title, window.location.pathname);
         promptForKilometers();
     }
@@ -303,6 +352,10 @@ function renderHistory() {
 
 // --- Indtast og Gem kilometer til Databasen ---
 async function promptForKilometers() {
+    if (!(await isLoggedIn())) {
+        loginModal.classList.remove('hidden');
+        return;
+    }
     const currentSavedKm = kmHistory.length > 0 ? kmHistory[0].km : (parseInt(localStorage.getItem('megane_km')) || 77000);
     
     const input = prompt("Hvad står kilometer tælleren i Renault appen på nu?", currentSavedKm);

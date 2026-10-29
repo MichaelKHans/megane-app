@@ -460,6 +460,19 @@
         </button>
     </nav>
 
+    <!-- Login (vises kun når man ikke er logget ind) -->
+    <div id="login-modal" class="modal hidden">
+        <form id="login-form" class="modal-content login-content">
+            <h3>Log ind</h3>
+            <p class="login-hint">Log ind én gang – telefonen husker dig bagefter.</p>
+            <input type="email" id="login-email" class="login-input" placeholder="E-mail" autocomplete="username" required>
+            <input type="password" id="login-password" class="login-input" placeholder="Adgangskode" autocomplete="current-password" required>
+            <p id="login-error" class="login-error hidden"></p>
+            <button type="submit" id="btn-login" class="primary-btn">Log ind</button>
+            <button type="button" id="btn-login-skip" class="primary-btn btn-settings">Se kun km og UHELD-info</button>
+        </form>
+    </div>
+
     <!-- Henter Chart.js og Supabase fra nettet -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

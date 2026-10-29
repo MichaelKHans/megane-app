@@ -275,6 +275,12 @@ h2 {
     animation: modalFadeIn 0.3s ease;
 }
 
+/* --- Login --- */
+.login-content h3 { font-size: 20px; margin-bottom: 6px; }
+.login-hint { font-size: 14px; color: var(--text-muted); margin-bottom: 16px; }
+.login-input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 16px; }
+.login-error { color: var(--danger-red); font-size: 14px; margin-bottom: 10px; }
+
 @keyframes modalFadeIn {
     from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }

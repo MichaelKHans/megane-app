@@ -1,0 +1,6 @@
+__pycache__/
+.env
+# Database-backups må aldrig ende i det offentlige repo
+*.backup
+*.backup.gz
+.claude/
