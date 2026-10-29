@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Megane">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="stylesheet" href="style.css?v=2.3">
+    <link rel="stylesheet" href="style.css?v=2.4">
 </head>
 <body>
     
@@ -235,7 +235,13 @@
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: 10px; margin-bottom: 16px; font-size: 13px;">
                     <strong style="display: block; margin-bottom: 10px; color: var(--text-main);">Udbetalingstype:</strong>
                     <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
-                        <input type="radio" name="down-payment-mode" id="dp-mode-equity" value="equity" checked style="accent-color: var(--primary-blue);">
+                        <input type="radio" name="down-payment-mode" id="dp-mode-percent" value="percent" checked style="accent-color: var(--primary-blue);">
+                        <span>Kontant udbetaling på</span>
+                        <input type="number" id="dp-percent" min="0" max="100" step="5" value="20" style="width: 56px; padding: 4px 6px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px;">
+                        <span>% <small style="color: var(--text-muted);">(normalt 20 %)</small></span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
+                        <input type="radio" name="down-payment-mode" id="dp-mode-equity" value="equity" style="accent-color: var(--primary-blue);">
                         <span>Brug nuværende bil som bytte (Friværdi)</span>
                     </label>
                     <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
@@ -252,9 +258,13 @@
                 </div>
 
                 <div id="dp-equity-info" style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 13px;">
-                    <strong>Friværdi i nuværende bil:</strong> 
+                    <strong>Nuværende bil ved salg:</strong>
                     <span id="txt-current-equity" style="font-weight: bold; color: var(--primary-blue);">Udregner...</span>
-                    <span style="display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px;">Friværdien modregnes automatisk som udbetaling på kandidaterne, hvilket reducerer lånebehovet.</span>
+                    <span style="display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px;">Markedsværdi minus restgæld hos Santander. Et underskud skal indfries, når bilen sælges.</span>
+                    <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px; cursor: pointer;">
+                        <input type="checkbox" id="dp-include-shortfall" checked style="accent-color: var(--primary-blue);">
+                        <span>Læg underskuddet oven i lånet på den nye bil</span>
+                    </label>
                 </div>
 
                 <div class="table-container scrollable-table">
@@ -481,6 +491,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <script src="app.js?v=2.3"></script>
+    <script src="app.js?v=2.4"></script>
 </body>
 </html>

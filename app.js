@@ -847,11 +847,18 @@ function calculateAnnuityPayment(principal, annualRate, months = 84) {
     return principal * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
 }
 
-function getCurrentCarEquity() {
+// Meganens værdi minus restgæld (negativ = underskud ved salg)
+function getCurrentCarNetValue() {
     const currentCarValue = currentBudget.bil_navn && currentBudget.bil_navn.includes('Megane') ? getMarketValueAt(new Date()) : (parseFloat(currentBudget.koebspris) || 233975);
-    const currentRestgaeld = getBalanceForDate(monthKey(new Date()));
-    const equity = currentCarValue - currentRestgaeld;
-    return Math.max(0, equity);
+    return currentCarValue - getBalanceForDate(monthKey(new Date()));
+}
+
+function getCurrentCarEquity() {
+    return Math.max(0, getCurrentCarNetValue());
+}
+
+function getCurrentCarShortfall() {
+    return Math.max(0, -getCurrentCarNetValue());
 }
 
 async function loadCandidates() {
@@ -892,8 +899,7 @@ function renderCandidates() {
     let html = '';
     candidatesData.forEach(c => {
         const cPrice = parseFloat(c.pris);
-        const dp = getSelectedDownPayment(cPrice);
-        const loanAmount = Math.max(0, cPrice - dp);
+        const loanAmount = getLoanNeed(cPrice);
         const monthlyLoan = calculateAnnuityPayment(loanAmount, parseFloat(c.rente), 84);
         const monthlyTotal = monthlyLoan + parseFloat(c.forsikring) + parseFloat(c.ejerafgift) + 999 + 320.00; // 999 kr Clever + 320 kr buffer
         
@@ -968,8 +974,11 @@ function renderComparison() {
     const txtEquity = document.getElementById('txt-current-equity');
     if (!compareHeader || !compareRows) return;
     
-    const equity = getCurrentCarEquity();
-    if (txtEquity) txtEquity.innerText = equity.toLocaleString('da-DK', { minimumFractionDigits: 2 }) + ' kr.';
+    const net = getCurrentCarNetValue();
+    if (txtEquity) {
+        txtEquity.innerText = `${net >= 0 ? 'Friværdi' : 'Underskud ved salg'}: ${Math.abs(net).toLocaleString('da-DK', { maximumFractionDigits: 0 })} kr.`;
+        txtEquity.style.color = net >= 0 ? 'var(--success-green)' : 'var(--danger-red)';
+    }
 
     // Beregn en repræsentativ udbetaling til brug i tabellens aktiv-bil kolonne (vises altid som 0 for aktiv bil)
     const samplePrice = candidatesData.length > 0 ? parseFloat(candidatesData[0].pris) : 300000;
@@ -993,7 +1002,7 @@ function renderComparison() {
     // Opret data-rækker til sammenligning
     const specs = [
         { label: 'Købspris', key: 'pris', suffix: ' kr.', format: true, activeVal: currentBudget.koebspris || 233975 },
-        { label: 'Udbetaling/Friværdi', key: 'udbetaling', suffix: ' kr.', format: true, activeVal: 0, isEquity: true },
+        { label: 'Udbetaling', key: 'udbetaling', suffix: ' kr.', format: true, activeVal: 0, isEquity: true },
         { label: 'Lånebehov', key: 'laanebehov', suffix: ' kr.', format: true, activeVal: 0, isLoanNeed: true },
         { label: 'Månedlig ydelse', key: 'ydelse', suffix: ' kr.', format: true, activeVal: activeYdelse },
         { label: 'Clever abonnement', key: 'clever', suffix: ' kr.', format: true, activeVal: activeClever },
@@ -1033,7 +1042,7 @@ function renderComparison() {
             let val = '';
             const cPrice = parseFloat(c.pris);
             const dp = getSelectedDownPayment(cPrice);
-            const cLoanAmount = Math.max(0, cPrice - dp);
+            const cLoanAmount = getLoanNeed(cPrice);
             const cMonthlyLoan = calculateAnnuityPayment(cLoanAmount, parseFloat(c.rente), 84);
             
             if (s.isEquity) {
@@ -1068,61 +1077,73 @@ function renderComparison() {
     compareRows.innerHTML = rowsHtml;
 }
 
-// --- Udbetalingstype state ---
-let downPaymentMode = 'equity'; // 'equity' | 'zero' | 'custom'
-let customDownPayment = 0;
+// --- Udbetalingstype (huskes på telefonen) ---
+// Standard: 20 % kontant udbetaling, som er normen for billån (bruges bl.a. i Tænk/FDM's tests af billån).
+const DP_DEFAULTS = { mode: 'percent', percent: 20, custom: 0, includeShortfall: true };
+let dpSettings = (() => {
+    try { return { ...DP_DEFAULTS, ...JSON.parse(localStorage.getItem('udbetaling') || '{}') }; }
+    catch (e) { return { ...DP_DEFAULTS }; }
+})();
+
+function saveDpSettings() {
+    try { localStorage.setItem('udbetaling', JSON.stringify(dpSettings)); } catch (e) { /* fx privat browsing */ }
+}
 
 /**
- * Beregner den faktiske udbetaling baseret på valgt mode og bilens pris.
+ * Udbetaling på en kandidatbil ud fra den valgte type.
  * @param {number} carPrice - Kandidatbilens pris
  * @returns {number} - Udbetalingsbeløb (aldrig negativt)
  */
 function getSelectedDownPayment(carPrice) {
-    if (downPaymentMode === 'zero') return 0;
-    if (downPaymentMode === 'custom') return Math.min(customDownPayment, carPrice);
-    // 'equity' mode: friværdi, men minimum 0
-    return getCurrentCarEquity();
+    switch (dpSettings.mode) {
+        case 'zero': return 0;
+        case 'custom': return Math.min(dpSettings.custom, carPrice);
+        case 'equity': return Math.min(getCurrentCarEquity(), carPrice);
+        default: return Math.round(carPrice * dpSettings.percent / 100);
+    }
+}
+
+// Lånebehov: pris minus udbetaling, plus Meganens underskud ved salg (restgæld der skal indfries)
+function getLoanNeed(carPrice) {
+    const shortfall = dpSettings.includeShortfall ? getCurrentCarShortfall() : 0;
+    return Math.max(0, carPrice - getSelectedDownPayment(carPrice)) + shortfall;
 }
 
 // Bind udbetalingstype vælger
 (function bindDownPaymentControls() {
-    const radioEquity = document.getElementById('dp-mode-equity');
-    const radioZero   = document.getElementById('dp-mode-zero');
-    const radioCustom = document.getElementById('dp-mode-custom');
-    const customWrap  = document.getElementById('dp-custom-input-wrap');
+    const radios = document.querySelectorAll('input[name="down-payment-mode"]');
+    const percentInput = document.getElementById('dp-percent');
+    const customWrap = document.getElementById('dp-custom-input-wrap');
     const customInput = document.getElementById('dp-custom-amount');
-    const equityInfo  = document.getElementById('dp-equity-info');
+    const shortfallBox = document.getElementById('dp-include-shortfall');
 
-    function onModeChange() {
+    // Vis de gemte valg
+    radios.forEach(r => { r.checked = r.value === dpSettings.mode; });
+    if (percentInput) percentInput.value = dpSettings.percent;
+    if (customInput && dpSettings.custom) customInput.value = dpSettings.custom;
+    if (shortfallBox) shortfallBox.checked = dpSettings.includeShortfall;
+
+    function update() {
         const selected = document.querySelector('input[name="down-payment-mode"]:checked');
-        if (!selected) return;
-        downPaymentMode = selected.value;
-
-        // Vis/skjul custom inputfelt og friværdi-infobox
-        if (customWrap) customWrap.style.display = downPaymentMode === 'custom' ? 'block' : 'none';
-        if (equityInfo) equityInfo.style.display = downPaymentMode === 'equity' ? 'block' : 'none';
-
+        if (selected) dpSettings.mode = selected.value;
+        if (percentInput) dpSettings.percent = Math.min(Math.max(parseFloat(percentInput.value) || 0, 0), 100);
+        if (customInput) dpSettings.custom = parseFloat(customInput.value) || 0;
+        if (shortfallBox) dpSettings.includeShortfall = shortfallBox.checked;
+        if (customWrap) customWrap.style.display = dpSettings.mode === 'custom' ? 'block' : 'none';
+        saveDpSettings();
         renderCandidates();
         renderComparison();
     }
 
-    if (radioEquity) radioEquity.addEventListener('change', onModeChange);
-    if (radioZero)   radioZero.addEventListener('change', onModeChange);
-    if (radioCustom) radioCustom.addEventListener('change', onModeChange);
-
-    if (customInput) {
-        customInput.addEventListener('input', () => {
-            customDownPayment = parseFloat(customInput.value) || 0;
-            renderCandidates();
-            renderComparison();
-        });
-    }
+    radios.forEach(r => r.addEventListener('change', update));
+    [percentInput, customInput].forEach(el => el && el.addEventListener('input', update));
+    if (shortfallBox) shortfallBox.addEventListener('change', update);
+    if (customWrap) customWrap.style.display = dpSettings.mode === 'custom' ? 'block' : 'none';
 })();
 
 // Markér som købt proces
 async function markCarAsBought(candidate) {
-    const equity = getCurrentCarEquity();
-    const principal = Math.max(0, candidate.pris - equity);
+    const principal = getLoanNeed(parseFloat(candidate.pris));
     const monthlyYdelse = calculateAnnuityPayment(principal, parseFloat(candidate.rente), 84);
 
     try {
