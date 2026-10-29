@@ -5,7 +5,8 @@ Bruges af den ugentlige Claude-opgave:
 
 Erstatter alle automatisk hentede rækker (auto = true). Kandidater du selv
 har tilføjet i appen (auto = false) bliver ikke rørt.
-Kræver miljøvariablerne SUPABASE_URL og SUPABASE_SERVICE_KEY.
+Nøglen kommer fra en netværkshemmelighed i Claude-skymiljøet (apikey-header),
+eller lokalt fra miljøvariablen SUPABASE_SERVICE_KEY.
 """
 import json
 import os
@@ -21,6 +22,7 @@ REQUIRED = {
     "salgsplacering": int, "kilde_url": str,
 }
 MAX_PRICE = 450000
+DEFAULT_SUPABASE_URL = "https://ibuaufoncymhlljgamie.supabase.co"
 
 
 def validate(cars):
@@ -37,13 +39,17 @@ def validate(cars):
 
 
 def request(method, path, body=None):
-    url = os.environ["SUPABASE_URL"].rstrip("/") + "/rest/v1/" + path
-    key = os.environ["SUPABASE_SERVICE_KEY"]
+    url = os.environ.get("SUPABASE_URL", DEFAULT_SUPABASE_URL).rstrip("/") + "/rest/v1/" + path
+    headers = {"Content-Type": "application/json", "Prefer": "return=minimal"}
+    # I Claude-skymiljøet tilføjer en netværkshemmelighed "apikey"-headeren uden for
+    # sessionen, så nøglen aldrig ses. Lokalt kan den sættes som miljøvariabel.
+    key = os.environ.get("SUPABASE_SERVICE_KEY")
+    if key:
+        headers["apikey"] = key
     req = urllib.request.Request(
         url, method=method,
         data=json.dumps(body).encode() if body is not None else None,
-        headers={"apikey": key, "Authorization": f"Bearer {key}",
-                 "Content-Type": "application/json", "Prefer": "return=minimal"},
+        headers=headers,
     )
     with urllib.request.urlopen(req) as res:
         return res.status
