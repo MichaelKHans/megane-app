@@ -1001,6 +1001,7 @@ function renderComparison() {
         { label: 'Grøn ejerafgift', key: 'ejerafgift', suffix: ' kr.', format: true, activeVal: activeEjerafgift },
         { label: 'Dæk & Vedligeholdelse', key: 'vedligeholdelse_buffer', suffix: ' kr.', format: true, activeVal: activeVedligeholdelse },
         { label: 'Månedlig TCO total', key: 'tco', suffix: ' kr.', format: true, activeVal: activeTotal, isTotal: true },
+        { label: 'Forskel pr. md. ift. din bil', key: 'tco_diff', suffix: ' kr.', format: true, activeVal: 0, isDiff: true },
         { label: 'WLTP Rækkevidde', key: 'wltp_km', suffix: ' km', activeVal: 450 }, // Standard for Megane E-Tech Iconic
         { label: 'Max Ladehastighed', key: 'ladehastighed_kw', suffix: ' kW', activeVal: 130 },
         { label: 'Bagagerum', key: 'bagagerum_liter', suffix: ' L', activeVal: 440 },
@@ -1014,7 +1015,9 @@ function renderComparison() {
         
         // Aktiv bil værdi
         let activeValStr = '';
-        if (s.isEquity) {
+        if (s.isDiff) {
+            activeValStr = '–';
+        } else if (s.isEquity) {
             activeValStr = '0,00 kr.';
         } else if (s.isLoanNeed) {
             activeValStr = '0,00 kr.';
@@ -1046,6 +1049,12 @@ function renderComparison() {
             } else if (s.key === 'tco') {
                 const total = cMonthlyLoan + parseFloat(c.forsikring) + parseFloat(c.ejerafgift) + 999 + 320.00;
                 val = total.toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + s.suffix;
+            } else if (s.isDiff) {
+                // Positiv = dyrere end din nuværende bil, negativ = billigere
+                const total = cMonthlyLoan + parseFloat(c.forsikring) + parseFloat(c.ejerafgift) + 999 + 320.00;
+                const diff = total - activeTotal;
+                const color = diff > 0 ? 'var(--danger-red)' : 'var(--success-green)';
+                val = `<strong style="color: ${color};">${diff > 0 ? '+' : ''}${diff.toLocaleString('da-DK', { maximumFractionDigits: 0 })} kr.</strong>`;
             } else if (s.format) {
                 val = parseFloat(c[s.key]).toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + s.suffix;
             } else {
