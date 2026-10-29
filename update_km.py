@@ -1,11 +1,12 @@
 import asyncio
 import os
 import sys
+from datetime import datetime, timezone
 
 import aiohttp
 from renault_api.exceptions import NotAuthenticatedException
 from renault_api.gigya.exceptions import PendingTwoFactorAuthenticationException
-from renault_api.kamereon.exceptions import ForbiddenException, UnauthorizedException
+from renault_api.kamereon.exceptions import UnauthorizedException
 from renault_api.renault_client import RenaultClient
 
 from renault_auth import get_supabase, load_credentials, save_credentials
@@ -16,9 +17,22 @@ class NeedsSetup(Exception):
 
 
 def is_auth_error(err):
-    if isinstance(err, (NotAuthenticatedException, UnauthorizedException, ForbiddenException)):
+    # Kun "token udløbet". Et 403 fra Renaults bil-API skyldes typisk, at Renault
+    # blokerer den GitHub-server vi kører på – her hjælper nyt login ikke, og
+    # gentagne login-forsøg kan i værste fald låse Renault-kontoen.
+    if isinstance(err, (NotAuthenticatedException, UnauthorizedException)):
         return True
-    return isinstance(err, aiohttp.ClientResponseError) and err.status in (401, 403)
+    return isinstance(err, aiohttp.ClientResponseError) and err.status == 401
+
+
+def already_saved_today(supabase):
+    today = datetime.now(timezone.utc).date().isoformat()
+    res = (
+        supabase.table("km_historik").select("id")
+        .gte("dato", today).not_.is_("batteri_procent", "null")
+        .limit(1).execute()
+    )
+    return bool(res.data)
 
 
 async def fetch_car_data(client):
@@ -52,6 +66,9 @@ async def password_login(client, supabase):
 
 async def run_update():
     supabase = get_supabase()
+    if already_saved_today(supabase) and os.environ.get("GITHUB_EVENT_NAME") == "schedule":
+        print("Data er allerede hentet i dag – springer over.")
+        return
     login_token, device_ids = load_credentials(supabase)
 
     async with aiohttp.ClientSession() as websession:
@@ -98,6 +115,12 @@ async def main():
     except NeedsSetup as err:
         print(f"FEJL: {err}")
         print("Kør 'python renault_setup.py' lokalt og indtast koden fra mailen.")
+        sys.exit(1)
+    except aiohttp.ClientResponseError as err:
+        if err.status != 403:
+            raise
+        print(f"FEJL: Renault afviste denne GitHub-server ({err.status}).")
+        print("Det sker af og til – næste planlagte kørsel prøver igen fra en anden server.")
         sys.exit(1)
     except Exception:
         # Første forsøg kan fejle på et midlertidigt netværksproblem – prøv én gang til

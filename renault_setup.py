@@ -15,6 +15,7 @@ import os
 
 import aiohttp
 from renault_api.gigya.exceptions import (
+    InvalidCredentialsException,
     InvalidVerificationCodeException,
     PendingTwoFactorAuthenticationException,
 )
@@ -30,6 +31,25 @@ def ask(prompt, env_name, secret=False):
     if value:
         return value
     return (getpass.getpass if secret else input)(prompt).strip()
+
+
+async def complete_two_factor(client):
+    emails = await client.session.get_two_factor_auth_emails()
+    email_id = None
+    if len(emails) > 1:
+        for i, email in enumerate(emails, 1):
+            print(f"  {i}. {email.obfuscated}")
+        email_id = emails[int(input("Vælg mail (nummer): ")) - 1].id
+    await client.session.request_two_factor_auth_code(email_id)
+    print("Renault har sendt en kode til din mail.")
+    while True:
+        code = input("Indtast koden: ").strip()
+        try:
+            await client.session.complete_two_factor_auth(code)
+            print("Logget ind med kode.")
+            return
+        except InvalidVerificationCodeException:
+            print("Forkert kode – prøv igen.")
 
 
 async def main():
@@ -48,26 +68,18 @@ async def main():
         if device_ids:
             client.session.set_device_ids(device_ids)
 
-        try:
-            await client.session.login(user, password)
-            print("Logget ind uden kode (enheden er allerede husket).")
-        except PendingTwoFactorAuthenticationException:
-            emails = await client.session.get_two_factor_auth_emails()
-            email_id = None
-            if len(emails) > 1:
-                for i, email in enumerate(emails, 1):
-                    print(f"  {i}. {email.obfuscated}")
-                email_id = emails[int(input("Vælg mail (nummer): ")) - 1].id
-            await client.session.request_two_factor_auth_code(email_id)
-            print("Renault har sendt en kode til din mail.")
-            while True:
-                code = input("Indtast koden: ").strip()
-                try:
-                    await client.session.complete_two_factor_auth(code)
-                    break
-                except InvalidVerificationCodeException:
-                    print("Forkert kode – prøv igen.")
-            print("Logget ind med kode.")
+        while True:
+            try:
+                await client.session.login(user, password)
+                print("Logget ind uden kode (enheden er allerede husket).")
+                break
+            except InvalidCredentialsException:
+                print("Forkert e-mail eller adgangskode – prøv igen.")
+                user = input("Renault e-mail: ").strip()
+                password = getpass.getpass("Renault adgangskode: ").strip()
+            except PendingTwoFactorAuthenticationException:
+                await complete_two_factor(client)
+                break
 
         # Test at vi faktisk kan læse bilen, før vi gemmer
         accounts = await client.get_api_accounts()

@@ -2,8 +2,10 @@ name: Hent Megane Kilometer
 
 on:
   schedule:
-    # Kører hver nat kl. 03:00 UTC (dansk tid 04:00/05:00)
+    # Kører kl. 03:00 og 15:00 UTC. Renault afviser af og til en GitHub-server,
+    # så anden kørsel er en reserve; den springer over, hvis data allerede er hentet.
     - cron: '0 3 * * *'
+    - cron: '0 15 * * *'
   workflow_dispatch:
     # Gør at du kan starte den manuelt med en knap for at teste
 
